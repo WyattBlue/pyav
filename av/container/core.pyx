@@ -1,6 +1,7 @@
 from cython.operator cimport dereference
 from libc.stdint cimport int64_t
 
+from pathlib import Path
 import os
 import time
 
@@ -357,9 +358,9 @@ def open(
     file,
     mode: str | None = None,
     format: str | None = None,
-    options: dict | None = None,
-    container_options: dict | None = None,  # dict[str, str]??
-    stream_options: list | None = None,
+    options: dict[str, str] | None = None,
+    container_options: dict[str, str] | None = None,
+    stream_options: list[str] | None = None,
     metadata_encoding: str = "utf-8",
     metadata_errors: str = "strict",
     buffer_size: int = 32768,
@@ -369,33 +370,36 @@ def open(
     if not (mode is None or (type(mode) is str and (mode == "r" or mode == "w"))):
         raise ValueError('mode must be "r" or "w" or None')
 
-    if mode is None:
+    if isinstance(file, str):
+        pass
+    elif isinstance(file, Path):
+        file = f"{file}"
+    elif mode is None:
         mode = getattr(file, "mode", None)
+
     if mode is None:
         mode = "r"
 
     if isinstance(timeout, tuple):
+        if len(timeout) != 2:
+            raise ValueError("timeout must be `Real` or `tuple[Real, Real]`")
+
         open_timeout = timeout[0]
         read_timeout = timeout[1]
     else:
         open_timeout = timeout
         read_timeout = timeout
 
-    if mode.startswith("w"):
-        if stream_options:
-            raise ValueError("Provide stream options via Container.add_stream(..., options={}).")
-        return OutputContainer(
-            _cinit_sentinel, file, format, options,
-            container_options, stream_options,
-            metadata_encoding, metadata_errors,
-            buffer_size, open_timeout, read_timeout,
-            io_open
+    if mode.startswith("r"):
+        return InputContainer(_cinit_sentinel, file, format, options,
+            container_options, stream_options, metadata_encoding, metadata_errors,
+            buffer_size, open_timeout, read_timeout, io_open,
         )
 
-    return InputContainer(
-        _cinit_sentinel, file, format, options,
-        container_options, stream_options,
-        metadata_encoding, metadata_errors,
-        buffer_size, open_timeout, read_timeout,
-        io_open
+    if stream_options:
+        raise ValueError("Provide stream options via Container.add_stream(..., options={}).")
+
+    return OutputContainer(_cinit_sentinel, file, format, options,
+        container_options, stream_options, metadata_encoding, metadata_errors,
+        buffer_size, open_timeout, read_timeout, io_open,
     )
