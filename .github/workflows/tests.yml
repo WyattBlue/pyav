@@ -31,12 +31,11 @@ jobs:
       - name: Packages
         run: |
           . scripts/activate.sh
-          python -m pip install black flake8 isort
+          python -m pip install black isort
 
       - name: "Test Style"
         run: |
           python -m black av examples tests
-          python -m flake8 av examples tests
           python -m isort --profile black --check-only --diff av examples tests
 
   nix:

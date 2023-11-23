@@ -1,5 +1,5 @@
-from libc.stdint cimport int32_t
 cimport libav as lib
+from libc.stdint cimport int32_t
 
 from av.enum cimport define_enum
 from av.error cimport err_check

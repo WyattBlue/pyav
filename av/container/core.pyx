@@ -1,9 +1,9 @@
 from cython.operator cimport dereference
 from libc.stdint cimport int64_t
 
-from pathlib import Path
 import os
 import time
+from pathlib import Path
 
 cimport libav as lib
 
@@ -18,7 +18,6 @@ from av.utils cimport avdict_to_dict
 
 from av.dictionary import Dictionary
 from av.logging import Capture as LogCapture
-
 
 ctypedef int64_t (*seek_func_t)(void *opaque, int64_t offset, int whence) noexcept nogil
 

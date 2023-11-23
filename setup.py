@@ -182,10 +182,20 @@ package_folders = pathlib.Path("av").glob("**/")
 package_data = {".".join(pckg.parts): ["*.pxd", "*.pyi"] for pckg in package_folders}
 
 
+with open("README.md") as f:
+    long_description = f.read()
+
 setup(
     name="pyav",
     version=about["__version__"],
     description="Pythonic bindings for FFmpeg's libraries.",
+    long_description=long_description,
+    long_description_content_type="text/markdown",
+    license="BSD",
+    project_urls = {
+        "Bug Reports": "https://github.com/WyattBlue/pyav/issues",
+        "Download": "https://pypi.org/project/pyav",
+    },
     author="WyattBlue",
     author_email="wyattblue@auto-editor.com",
     url="https://github.com/WyattBlue/pyav",

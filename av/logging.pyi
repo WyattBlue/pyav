@@ -1,6 +1,6 @@
+import logging
 from threading import Lock
 from typing import Callable
-import logging
 
 PANIC: int
 FATAL: int
