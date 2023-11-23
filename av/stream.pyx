@@ -14,10 +14,9 @@ from av.utils cimport (
 
 cdef object _cinit_bypass_sentinel = object()
 
-SideData = define_enum('SideData', __name__, (
-    ('DISPLAYMATRIX', lib.AV_PKT_DATA_DISPLAYMATRIX 	,
-        """Display Matrix"""),
-    # TODO: put all others from here https://ffmpeg.org/doxygen/trunk/group__lavc__packet.html#ga9a80bfcacc586b483a973272800edb97
+# TODO: put all others: https://ffmpeg.org/doxygen/trunk/group__lavc__packet.html#ga9a80bfcacc586b483a973272800edb97
+SideData = define_enum("SideData", __name__, (
+    ("DISPLAYMATRIX", lib.AV_PKT_DATA_DISPLAYMATRIX, "Display Matrix"),
 ))
 
 cdef Stream wrap_stream(Container container, lib.AVStream *c_stream, CodecContext codec_context):
@@ -72,7 +71,7 @@ cdef class Stream:
     def __cinit__(self, name):
         if name is _cinit_bypass_sentinel:
             return
-        raise RuntimeError('cannot manually instantiate Stream')
+        raise RuntimeError("cannot manually instantiate Stream")
 
     cdef _init(self, Container container, lib.AVStream *stream, CodecContext codec_context):
         self.container = container
@@ -100,16 +99,16 @@ cdef class Stream:
         )
 
     def __repr__(self):
-        return '<av.%s #%d %s/%s at 0x%x>' % (
+        return "<av.%s #%d %s/%s at 0x%x>" % (
             self.__class__.__name__,
             self.index,
-            self.type or '<notype>',
-            self.name or '<nocodec>',
+            self.type or "<notype>",
+            self.name or "<nocodec>",
             id(self),
         )
 
     def __getattr__(self, name):
-        if name == 'side_data':
+        if name == "side_data":
             return self.side_data
 
         # Convenience getter for codec context properties.
@@ -313,7 +312,7 @@ cdef class Stream:
         :type: :class:`str` or ``None``
         """
         def __get__(self):
-            return self.metadata.get('language')
+            return self.metadata.get("language")
 
     @property
     def type(self):
