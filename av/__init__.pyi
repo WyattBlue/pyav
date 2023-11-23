@@ -1,11 +1,12 @@
-from typing import overload, Literal, Any, Iterator
+from fractions import Fraction
 from numbers import Real
 from pathlib import Path
-from fractions import Fraction
+from typing import Any, Iterator, Literal, overload
+
+from av import logging
 
 class FFmpegError(Exception):
     def __init__(self, code, message, filename=None, log=None): ...
-
 
 class Codec:
     name: str
@@ -14,12 +15,18 @@ class Codec:
     frame_rates: list[Fraction] | None
     audio_rates: list[int] | None
 
-
 class CodecContext:
-    extradata_size: bool
-    is_open: bool
-    is_encoder: bool
-    is_decoder: bool
+    name: str
+    bit_rate: int | None
+    width: int
+    height: int
+    pix_fmt: str | None
+    sample_aspect_ratio: Fraction | None
+    sample_rate: int | None
+    extradata_size: int
+    is_open: Literal[0, 1]
+    is_encoder: Literal[0, 1]
+    is_decoder: Literal[0, 1]
 
 class Stream:
     thread_type: Literal["NONE", "FRAME", "SLICE", "AUTO"]
@@ -43,10 +50,21 @@ class Stream:
     # https://ffmpeg.org/doxygen/6.0/libavutil_2utils_8c_source.html
     type: Literal["video", "audio", "data", "subtitle", "attachment"]
 
+    # From `codec_context`
+    name: str
+    bit_rate: int | None
+    width: int
+    height: int
+    pix_fmt: str | None
+    sample_aspect_ratio: Fraction | None
+    sample_rate: int | None
+    extradata_size: int
+    is_open: Literal[0, 1]
+    is_encoder: Literal[0, 1]
+    is_decoder: Literal[0, 1]
+
     def decode(self, packet=None): ...
     def encode(self, frame=None): ...
-
-
 
 class ContainerFormat: ...
 
@@ -87,6 +105,7 @@ class Container:
     container_options: dict[str, str]
     stream_options: list[str]
     streams: StreamContainer
+    duration: int | None
     metadata: dict[str, str]
     open_timeout: Real | None
     read_timeout: Real | None
@@ -95,7 +114,12 @@ class Container:
     def set_timeout(self, timeout: Real | None) -> None: ...
     def start_timeout(self) -> None: ...
 
-class InputContainer(Container): ...
+class InputContainer(Container):
+    bit_rate: int
+    size: int
+
+    def demux(self, *args, **kwargs): ...
+    def decode(self, *args, **kwargs): ...
 
 class OutputContainer(Container):
     def start_encoding(self) -> None: ...
