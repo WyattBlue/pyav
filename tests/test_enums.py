@@ -17,7 +17,7 @@ class TestEnums(TestCase):
                 ("FOO", 1),
                 ("BAR", 2),
             ),
-            **kwargs
+            **kwargs,
         )
 
     def test_basics(self):

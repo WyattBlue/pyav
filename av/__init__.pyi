@@ -87,7 +87,7 @@ class StreamContainer:
     def get(
         self,
         *args: int | Stream | dict[str, int | tuple[int, ...]],
-        **kwargs: int | tuple[int, ...]
+        **kwargs: int | tuple[int, ...],
     ) -> list[Stream]: ...
 
 class Container:

@@ -35,10 +35,5 @@ deactivate
 pip install .
 ```
 
-## Features 
-pyav is forked from [PyAV](https://github.com/PyAV-Org/PyAV), and currently has the following benefits:
- * Wheels for Python 3.12
- * Support for Cython 3
- * Support for FFmpeg 6, and beyond
- * Expanded support for different pixel formats
-
+## About
+pyav is a friendly fork of [PyAV](https://github.com/PyAV-Org/PyAV) made by a PyAV maintainer. pyav offers bleeding-edge features in exchange for requiring more up to date Python and FFmpeg versions.
