@@ -3,10 +3,7 @@ from numbers import Real
 from pathlib import Path
 from typing import Any, Iterator, Literal, overload
 
-from av import logging
-
-class FFmpegError(Exception):
-    def __init__(self, code, message, filename=None, log=None): ...
+from av import error, logging
 
 class Codec:
     name: str
@@ -23,6 +20,7 @@ class CodecContext:
     pix_fmt: str | None
     sample_aspect_ratio: Fraction | None
     sample_rate: int | None
+    channels: int
     extradata_size: int
     is_open: Literal[0, 1]
     is_encoder: Literal[0, 1]
@@ -58,6 +56,7 @@ class Stream:
     pix_fmt: str | None
     sample_aspect_ratio: Fraction | None
     sample_rate: int | None
+    channels: int
     extradata_size: int
     is_open: Literal[0, 1]
     is_encoder: Literal[0, 1]
@@ -83,6 +82,7 @@ class StreamContainer:
     def __getitem__(self, index: int) -> Stream: ...
     @overload
     def __getitem__(self, index: slice) -> list[Stream]: ...
+    @overload
     def __getitem__(self, index: int | slice) -> Stream | list[Stream]: ...
     def get(
         self,
@@ -110,6 +110,8 @@ class Container:
     open_timeout: Real | None
     read_timeout: Real | None
 
+    def __enter__(self) -> Container: ...
+    def __exit__(self, exc_type, exc_val, exc_tb): ...
     def err_check(self, value: int) -> int: ...
     def set_timeout(self, timeout: Real | None) -> None: ...
     def start_timeout(self) -> None: ...
@@ -123,59 +125,3 @@ class InputContainer(Container):
 
 class OutputContainer(Container):
     def start_encoding(self) -> None: ...
-
-@overload
-def open(
-    file: Any,
-    mode: Literal["r"] = None,
-    format: str | None = None,
-    options: dict[str, str] | None = None,
-    container_options: dict[str, str] | None = None,
-    stream_options: list[str] | None = None,
-    metadata_encoding: str = "utf-8",
-    metadata_errors: str = "strict",
-    buffer_size: int = 32768,
-    timeout=Real | None | tuple[Real | None, Real | None],
-    io_open=None,
-) -> InputContainer: ...
-@overload
-def open(
-    file: str | Path,
-    mode: Literal["r"] | None = None,
-    format: str | None = None,
-    options: dict[str, str] | None = None,
-    container_options: dict[str, str] | None = None,
-    stream_options: list[str] | None = None,
-    metadata_encoding: str = "utf-8",
-    metadata_errors: str = "strict",
-    buffer_size: int = 32768,
-    timeout=Real | None | tuple[Real | None, Real | None],
-    io_open=None,
-) -> InputContainer: ...
-@overload
-def open(
-    file: Any,
-    mode: Literal["w"],
-    format: str | None = None,
-    options: dict[str, str] | None = None,
-    container_options: dict[str, str] | None = None,
-    stream_options: list[str] | None = None,
-    metadata_encoding: str = "utf-8",
-    metadata_errors: str = "strict",
-    buffer_size: int = 32768,
-    timeout=Real | None | tuple[Real | None, Real | None],
-    io_open=None,
-) -> OutputContainer: ...
-def open(
-    file: Any,
-    mode: Literal["r", "w"] | None = None,
-    format: str | None = None,
-    options: dict[str, str] | None = None,
-    container_options: dict[str, str] | None = None,
-    stream_options: list[str] | None = None,
-    metadata_encoding: str = "utf-8",
-    metadata_errors: str = "strict",
-    buffer_size: int = 32768,
-    timeout=Real | None | tuple[Real | None, Real | None],
-    io_open=None,
-) -> InputContainer | OutputContainer: ...
