@@ -23,7 +23,7 @@ jobs:
       - name: Python
         uses: actions/setup-python@v4
         with:
-          python-version: 3.9
+          python-version: 3.12
 
       - name: Environment
         run: env | sort
@@ -35,10 +35,9 @@ jobs:
 
       - name: "Test Style"
         run: |
-          . scripts/activate.sh
-          ./scripts/test black
-          ./scripts/test flake8
-          ./scripts/test isort
+          python -m black av examples tests
+          python -m flake8 av examples tests
+          python -m isort --profile black --check-only --diff av examples tests
 
   nix:
     name: "py-${{ matrix.config.python }} lib-${{ matrix.config.ffmpeg }} ${{matrix.config.os}}"

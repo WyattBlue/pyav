@@ -8,7 +8,7 @@ from av.utils cimport (
     avdict_to_dict,
     avrational_to_fraction,
     dict_to_avdict,
-    to_avrational
+    to_avrational,
 )
 
 
