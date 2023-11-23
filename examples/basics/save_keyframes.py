@@ -1,7 +1,6 @@
 import av
 import av.datasets
 
-
 content = av.datasets.curated("pexels/time-lapse-video-of-night-sky-857195.mp4")
 with av.open(content) as container:
     # Signal that we only want to look at keyframes.
@@ -9,7 +8,6 @@ with av.open(content) as container:
     stream.codec_context.skip_frame = "NONKEY"
 
     for frame in container.decode(stream):
-
         print(frame)
 
         # We use `frame.pts` as `frame.index` won't make must sense with the `skip_frame`.

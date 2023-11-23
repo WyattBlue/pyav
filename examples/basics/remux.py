@@ -1,7 +1,6 @@
 import av
 import av.datasets
 
-
 input_ = av.open(av.datasets.curated("pexels/time-lapse-video-of-night-sky-857195.mp4"))
 output = av.open("remuxed.mkv", "w")
 
@@ -11,7 +10,6 @@ in_stream = input_.streams.video[0]
 out_stream = output.add_stream(template=in_stream)
 
 for packet in input_.demux(in_stream):
-
     print(packet)
 
     # We need to skip the "flushing" packets that `demux` generates.

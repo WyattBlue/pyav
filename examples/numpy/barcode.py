@@ -1,9 +1,8 @@
-from PIL import Image
 import numpy as np
+from PIL import Image
 
 import av
 import av.datasets
-
 
 container = av.open(
     av.datasets.curated("pexels/time-lapse-video-of-sunset-by-the-sea-854400.mp4")
@@ -12,7 +11,6 @@ container.streams.video[0].thread_type = "AUTO"  # Go faster!
 
 columns = []
 for frame in container.decode(video=0):
-
     print(frame)
     array = frame.to_ndarray(format="rgb24")
 
