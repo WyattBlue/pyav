@@ -2,10 +2,35 @@ from numbers import Real
 from pathlib import Path
 from typing import Any, Iterator, Literal, overload
 
-from av import error, logging
+from .input import InputContainer
+from .output import OutputContainer
+from .streams import StreamContainer
 
-from .container.input import InputContainer
-from .container.output import OutputContainer
+class Container:
+    writeable: bool
+    name: str
+    metadata_encoding: str
+    metadata_errors: str
+    file: Any
+    buffer_size: int
+    input_was_opened: bool
+    io_open: Any
+    open_files: Any
+    format: str | None
+    options: dict[str, str]
+    container_options: dict[str, str]
+    stream_options: list[str]
+    streams: StreamContainer
+    duration: int | None
+    metadata: dict[str, str]
+    open_timeout: Real | None
+    read_timeout: Real | None
+
+    def __enter__(self) -> Container: ...
+    def __exit__(self, exc_type, exc_val, exc_tb): ...
+    def err_check(self, value: int) -> int: ...
+    def set_timeout(self, timeout: Real | None) -> None: ...
+    def start_timeout(self) -> None: ...
 
 @overload
 def open(
