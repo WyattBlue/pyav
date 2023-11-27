@@ -12,7 +12,6 @@ cdef AudioLayout get_audio_layout(int channels, uint64_t c_layout):
     return layout
 
 
-# These are the defaults given by FFmpeg; Libav is different.
 # TODO: What about av_get_default_channel_layout(...)?
 cdef uint64_t default_layouts[17]
 default_layouts[0] = 0
@@ -31,36 +30,35 @@ default_layouts[12] = 0x0FFF
 default_layouts[13] = 0x1FFF
 default_layouts[14] = 0x3FFF
 default_layouts[15] = 0x7FFF
-default_layouts[16] = 0xFFFF  # FFmpeg has one here.
+default_layouts[16] = 0xFFFF
 
 
-# These are the descriptions as given by FFmpeg; Libav does not have them.
 cdef dict channel_descriptions = {
-    'FL': 'front left',
-    'FR': 'front right',
-    'FC': 'front center',
-    'LFE': 'low frequency',
-    'BL': 'back left',
-    'BR': 'back right',
-    'FLC': 'front left-of-center',
-    'FRC': 'front right-of-center',
-    'BC': 'back center',
-    'SL': 'side left',
-    'SR': 'side right',
-    'TC': 'top center',
-    'TFL': 'top front left',
-    'TFC': 'top front center',
-    'TFR': 'top front right',
-    'TBL': 'top back left',
-    'TBC': 'top back center',
-    'TBR': 'top back right',
-    'DL': 'downmix left',
-    'DR': 'downmix right',
-    'WL': 'wide left',
-    'WR': 'wide right',
-    'SDL': 'surround direct left',
-    'SDR': 'surround direct right',
-    'LFE2': 'low frequency 2',
+    "FL": "front left",
+    "FR": "front right",
+    "FC": "front center",
+    "LFE": "low frequency",
+    "BL": "back left",
+    "BR": "back right",
+    "FLC": "front left-of-center",
+    "FRC": "front right-of-center",
+    "BC": "back center",
+    "SL": "side left",
+    "SR": "side right",
+    "TC": "top center",
+    "TFL": "top front left",
+    "TFC": "top front center",
+    "TFR": "top front right",
+    "TBL": "top back left",
+    "TBC": "top back center",
+    "TBR": "top back right",
+    "DL": "downmix left",
+    "DR": "downmix right",
+    "WL": "wide left",
+    "WR": "wide right",
+    "SDL": "surround direct left",
+    "SDR": "surround direct right",
+    "LFE2": "low frequency 2",
 }
 
 
@@ -72,17 +70,17 @@ cdef class AudioLayout:
         cdef uint64_t c_layout
         if isinstance(layout, int):
             if layout < 0 or layout > 8:
-                raise ValueError('no layout with %d channels' % layout)
+                raise ValueError(f"no layout with {layout} channels")
             c_layout = default_layouts[layout]
         elif isinstance(layout, str):
             c_layout = lib.av_get_channel_layout(layout)
         elif isinstance(layout, AudioLayout):
             c_layout = layout.layout
         else:
-            raise TypeError('layout must be str or int')
+            raise TypeError("layout must be str or int")
 
         if not c_layout:
-            raise ValueError('invalid channel layout %r' % layout)
+            raise ValueError(f"invalid channel layout {layout!r}")
 
         self._init(c_layout)
 
@@ -92,7 +90,7 @@ cdef class AudioLayout:
         self.channels = tuple(AudioChannel(self, i) for i in range(self.nb_channels))
 
     def __repr__(self):
-        return '<av.%s %r>' % (self.__class__.__name__, self.name)
+        return f"<av.{self.__class__.__name__} {self.name!r}>"
 
     property name:
         """The canonical name of the audio layout."""
@@ -108,7 +106,7 @@ cdef class AudioChannel:
         self.channel = lib.av_channel_layout_extract_channel(layout.layout, index)
 
     def __repr__(self):
-        return '<av.%s %r (%s)>' % (self.__class__.__name__, self.name, self.description)
+        return f"<av.{self.__class__.__name__} {self.name!r} ({self.description})>"
 
     property name:
         """The canonical name of the audio channel."""

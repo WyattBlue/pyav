@@ -1,3 +1,5 @@
+from typing import Literal, Sequence, overload
+
 class EnumType(type):
     def __init__(self, name, bases, attrs, items): ...
     def _create(self, name: str, value: int, doc=None, by_value_only=False): ...
@@ -28,3 +30,25 @@ class EnumFlag(EnumItem):
     def __xor__(self, other): ...
     def __invert__(self): ...
     def __nonzero__(self) -> bool: ...
+
+@overload
+def define_enum(
+    name: str,
+    module: str,
+    items: Sequence[tuple[str, int] | None],
+    is_flags: Literal[True],
+) -> EnumFlag: ...
+@overload
+def define_enum(
+    name: str,
+    module: str,
+    items: Sequence[tuple[str, int] | None],
+    is_flags: Literal[False],
+) -> EnumItem: ...
+@overload
+def define_enum(
+    name: str,
+    module: str,
+    items: Sequence[tuple[str, int] | None],
+    is_flags: bool = False,
+) -> EnumItem | EnumFlag: ...

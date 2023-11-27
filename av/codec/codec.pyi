@@ -1,0 +1,52 @@
+from fractions import Fraction
+from typing import Literal
+
+from av.enum import EnumFlag
+
+class Properties(EnumFlag):
+    NONE: int
+    INTRA_ONLY: int
+    LOSSY: int
+    LOSSLESS: int
+    REORDER: int
+    BITMAP_SUB: int
+    TEXT_SUB: int
+
+class Capabilities(EnumFlag):
+    NONE: int
+    DARW_HORIZ_BAND: int
+    DR1: int
+    HWACCEL: int
+    DELAY: int
+    SMALL_LAST_FRAME: int
+    HWACCEL_VDPAU: int
+    SUBFRAMES: int
+    EXPERIMENTAL: int
+    CHANNEL_CONF: int
+    NEG_LINESIZES: int
+    FRAME_THREADS: int
+    SLICE_THREADS: int
+    PARAM_CHANGE: int
+    AUTO_THREADS: int
+    VARIABLE_FRAME_SIZE: int
+    AVOID_PROBING: int
+    HARDWARE: int
+    HYBRID: int
+    ENCODER_REORDERED_OPAQUE: int
+    ENCODER_FLUSH: int
+
+class UnknownCodecError(ValueError): ...
+
+class Codec:
+    is_decoder: bool
+    name: str
+    long_name: str
+    type: Literal["video", "audio", "data", "subtitle", "attachment"]
+    frame_rates: list[Fraction] | None
+    audio_rates: list[int] | None
+
+    def __init__(self, name: str, mode: Literal["r", "w"]): ...
+
+codecs_available: set[str]
+
+def dump_codecs() -> None: ...
