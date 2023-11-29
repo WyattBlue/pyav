@@ -1,11 +1,12 @@
-
 cdef object _cinit_bypass_sentinel = object()
 
 cdef VideoFormat get_video_format(lib.AVPixelFormat c_format, unsigned int width, unsigned int height):
     if c_format == lib.AV_PIX_FMT_NONE:
         return None
+
     cdef VideoFormat format = VideoFormat.__new__(VideoFormat, _cinit_bypass_sentinel)
     format._init(c_format, width, height)
+
     return format
 
 cdef lib.AVPixelFormat get_pix_fmt(const char *name) except lib.AV_PIX_FMT_NONE:
@@ -14,7 +15,7 @@ cdef lib.AVPixelFormat get_pix_fmt(const char *name) except lib.AV_PIX_FMT_NONE:
     cdef lib.AVPixelFormat pix_fmt = lib.av_get_pix_fmt(name)
 
     if pix_fmt == lib.AV_PIX_FMT_NONE:
-        raise ValueError('not a pixel format: %r' % name)
+        raise ValueError(f"not a pixel format: {name!r}")
 
     return pix_fmt
 
@@ -45,17 +46,15 @@ cdef class VideoFormat:
 
     def __repr__(self):
         if self.width or self.height:
-            return '<av.%s %s, %dx%d>' % (self.__class__.__name__, self.name, self.width, self.height)
+            return f"<av.{self.__class__.__name__} {self.name}, {self.width}x{self.height}>"
         else:
-            return '<av.%s %s>' % (self.__class__.__name__, self.name)
+            return f"<av.{self.__class__.__name__} {self.name}>"
 
     def __int__(self):
         return int(self.pix_fmt)
 
     property name:
-        """Canonical name of the pixel format."""
-        def __get__(self):
-            return <str>self.ptr.name
+        def __get__(self): return <str>self.ptr.name
 
     property bits_per_pixel:
         def __get__(self): return lib.av_get_bits_per_pixel(self.ptr)

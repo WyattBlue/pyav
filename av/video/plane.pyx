@@ -4,7 +4,7 @@ from av.video.frame cimport VideoFrame
 cdef class VideoPlane(Plane):
     def __cinit__(self, VideoFrame frame, int index):
         # The palette plane has no associated component or linesize; set fields manually
-        if frame.format.name == 'pal8' and index == 1:
+        if frame.format.name == "pal8" and index == 1:
             self.width = 256
             self.height = 1
             self.buffer_size = 256 * 4
@@ -21,7 +21,7 @@ cdef class VideoPlane(Plane):
 
         # Sometimes, linesize is negative (and that is meaningful). We are only
         # insisting that the buffer size be based on the extent of linesize, and
-        # ignore it's direction.
+        # ignore its direction.
         self.buffer_size = abs(self.frame.ptr.linesize[self.index]) * self.height
 
     cdef size_t _buffer_size(self):

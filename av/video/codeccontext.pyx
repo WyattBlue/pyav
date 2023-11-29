@@ -11,7 +11,6 @@ from av.video.reformatter cimport VideoReformatter
 
 
 cdef class VideoCodecContext(CodecContext):
-
     def __cinit__(self, *args, **kwargs):
         self.last_w = 0
         self.last_h = 0
