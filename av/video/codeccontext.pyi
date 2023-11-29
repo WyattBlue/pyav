@@ -1,7 +1,10 @@
 from fractions import Fraction
-from typing import Literal
+from typing import Iterator, Literal
 
 from av.codec.context import CodecContext
+from av.packet import Packet
+
+from .frame import VideoFrame
 
 class VideoCodecContext(CodecContext):
     width: int
@@ -18,3 +21,6 @@ class VideoCodecContext(CodecContext):
     coded_height: int
     color_range: int
     type: Literal["video"]
+    def encode(self, frame: VideoFrame | None = None) -> list[Packet]: ...
+    def encode_lazy(self, frame: VideoFrame | None = None) -> Iterator[Packet]: ...
+    def decode(self, packet: Packet | None = None) -> list[VideoFrame]: ...

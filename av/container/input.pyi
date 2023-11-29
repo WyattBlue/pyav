@@ -1,3 +1,6 @@
+from av.frame import Frame
+from av.packet import Packet
+
 from .core import Container
 from .streams import Stream
 
@@ -5,8 +8,9 @@ class InputContainer(Container):
     bit_rate: int
     size: int
 
-    def demux(self, *args, **kwargs): ...
-    def decode(self, *args, **kwargs): ...
+    def close(self): ...
+    def demux(self, *args, **kwargs) -> Packet: ...
+    def decode(self, *args, **kwargs) -> Frame: ...
     def seek(
         self,
         offset: int,
