@@ -1,7 +1,9 @@
 from fractions import Fraction
 from typing import Literal
 
+from av.audio.format import AudioFormat
 from av.enum import EnumFlag
+from av.video.format import VideoFormat
 
 class Properties(EnumFlag):
     NONE: int
@@ -44,8 +46,14 @@ class Codec:
     type: Literal["video", "audio", "data", "subtitle", "attachment"]
     frame_rates: list[Fraction] | None
     audio_rates: list[int] | None
+    video_formats: list[VideoFormat] | None
+    audio_formats: list[AudioFormat] | None
 
     def __init__(self, name: str, mode: Literal["r", "w"]): ...
+
+class codec_descriptor:
+    name: str
+    options: tuple[int, ...]
 
 codecs_available: set[str]
 
