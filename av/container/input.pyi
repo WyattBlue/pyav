@@ -1,3 +1,5 @@
+from typing import Iterator
+
 from av.frame import Frame
 from av.packet import Packet
 
@@ -9,8 +11,8 @@ class InputContainer(Container):
     size: int
 
     def close(self): ...
-    def demux(self, *args, **kwargs) -> Packet: ...
-    def decode(self, *args, **kwargs) -> Frame: ...
+    def demux(self, *args, **kwargs) -> Iterator[Packet]: ...
+    def decode(self, *args, **kwargs) -> Iterator[Frame]: ...
     def seek(
         self,
         offset: int,
