@@ -7,13 +7,11 @@ def main():
     parser.add_argument("--version", action="store_true")
     args = parser.parse_args()
 
-    # ---
-
     if args.version:
         import av
         import av._core
 
-        print("PyAV v" + av.__version__)
+        print(f"PyAV v{av.__version__}")
 
         by_config = {}
         for libname, config in sorted(av._core.library_meta.items()):
