@@ -25,7 +25,7 @@ def get_url():
     else:
         raise Exception(f"Unsupported system {system}")
 
-    return f"https://github.com/WyattBlue/pyav-ffmpeg/releases/download/6.0-4/ffmpeg-{plat}.tar.gz"
+    return f"https://github.com/WyattBlue/pyav-ffmpeg/releases/download/6.1-2/ffmpeg-{plat}.tar.gz"
 
 
 parser = argparse.ArgumentParser(description="Fetch and extract tarballs")

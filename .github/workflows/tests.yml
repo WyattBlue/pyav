@@ -45,9 +45,9 @@ jobs:
       fail-fast: false
       matrix:
         config:
-          - {os: ubuntu-latest, python: 3.9, ffmpeg: "6.0"}
+          - {os: ubuntu-latest, python: 3.9, ffmpeg: "6.1"}
           - {os: ubuntu-latest, python: 3.9, ffmpeg: "5.1"}
-          - {os: macos-latest,  python: 3.9, ffmpeg: "6.0"}
+          - {os: macos-latest,  python: 3.9, ffmpeg: "6.1"}
     env:
       PYAV_PYTHON: python${{ matrix.config.python }}
       PYAV_LIBRARY: ffmpeg-${{ matrix.config.ffmpeg }}
@@ -102,7 +102,7 @@ jobs:
       fail-fast: false
       matrix:
         config:
-          - {os: windows-latest, python: 3.9, ffmpeg: "6.0"}
+          - {os: windows-latest, python: 3.9, ffmpeg: "6.1"}
           - {os: windows-latest, python: 3.9, ffmpeg: "5.1"}
 
     steps:
@@ -132,7 +132,7 @@ jobs:
       run: |
         . $CONDA/etc/profile.d/conda.sh
         conda activate pyav
-        if [[ "${{ matrix.config.ffmpeg }}" != "6.0" ]]; then
+        if [[ "${{ matrix.config.ffmpeg }}" != "6.1" ]]; then
           tar -xf ffmpeg.tar.gz -C $CONDA_PREFIX/Library/
         fi
         python setup.py build_ext --inplace --ffmpeg-dir=$CONDA_PREFIX/Library
