@@ -50,6 +50,7 @@ cdef extern from "libavformat/avformat.h" nogil:
         int nb_side_data
         AVPacketSideData *side_data
 
+
     # http://ffmpeg.org/doxygen/trunk/structAVIOContext.html
     cdef struct AVIOContext:
         unsigned char* buffer

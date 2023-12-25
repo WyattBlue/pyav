@@ -1,9 +1,4 @@
-from libc.stdint cimport (
-    uint8_t, int8_t,
-    uint16_t, int16_t,
-    uint32_t, int32_t,
-    uint64_t, int64_t
-)
+from libc.stdint cimport int8_t, int64_t, uint16_t, uint32_t
 
 
 cdef extern from "libavcodec/avcodec.h" nogil:
@@ -110,6 +105,15 @@ cdef extern from "libavcodec/avcodec.h" nogil:
         AV_CODEC_ID_NONE
         AV_CODEC_ID_MPEG2VIDEO
         AV_CODEC_ID_MPEG1VIDEO
+
+    cdef enum AVDiscard:
+        AVDISCARD_NONE
+        AVDISCARD_DEFAULT
+        AVDISCARD_NONREF
+        AVDISCARD_BIDIR
+        AVDISCARD_NONINTRA
+        AVDISCARD_NONKEY
+        AVDISCARD_ALL
 
     cdef struct AVCodec:
 
@@ -251,7 +255,7 @@ cdef extern from "libavcodec/avcodec.h" nogil:
         AVDictionary **options,
     )
 
-    cdef int avcodec_is_open(AVCodecContext *ctx)
+    cdef int avcodec_is_open(AVCodecContext *ctx )
     cdef int avcodec_close(AVCodecContext *ctx)
 
     cdef int AV_NUM_DATA_POINTERS
@@ -292,9 +296,9 @@ cdef extern from "libavcodec/avcodec.h" nogil:
         AV_PKT_DATA_NB
 
     cdef struct AVPacketSideData:
-        uint8_t *data
-        size_t size
-        AVPacketSideDataType type
+        uint8_t *data;
+        size_t size;
+        AVPacketSideDataType type;
 
     cdef enum AVFrameSideDataType:
         AV_FRAME_DATA_PANSCAN
@@ -480,28 +484,6 @@ cdef extern from "libavcodec/avcodec.h" nogil:
     cdef struct AVCodecParameters:
         AVMediaType codec_type
         AVCodecID codec_id
-        uint32_t codec_tag
-        uint8_t *extradata
-        int extradata_size
-        int format
-        int64_t bit_rate
-        int bits_per_coded_sample
-        int bits_per_raw_sample
-        int profile
-        int level
-        int width
-        int height
-        AVRational sample_aspect_ratio
-        AVFieldOrder field_order
-        AVColorRange color_range
-        AVColorPrimaries color_primaries
-        AVColorTransferCharacteristic color_trc
-        AVColorSpace color_space
-        AVChromaLocation chroma_location
-        int video_delay
-        AVRational framerate
-        AVPacketSideData *coded_side_data
-        int nb_coded_side_data
 
     cdef int avcodec_parameters_copy(
         AVCodecParameters *dst,
