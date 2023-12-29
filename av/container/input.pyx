@@ -149,7 +149,7 @@ cdef class InputContainer(Container):
             for stream in streams:
                 i = stream.index
                 if i >= self.ptr.nb_streams:
-                    raise ValueError('stream index %d out of range' % i)
+                    raise ValueError("stream index %d out of range" % i)
                 include_stream[i] = True
 
             while True:
@@ -203,7 +203,7 @@ cdef class InputContainer(Container):
             for frame in packet.decode():
                 yield frame
 
-    def seek(self, offset, *, str whence='time', bint backward=True,
+    def seek(self, offset, *, str whence="time", bint backward=True,
              bint any_frame=False, Stream stream=None,
              bint unsupported_frame_offset=False,
              bint unsupported_byte_offset=False):
@@ -239,7 +239,7 @@ cdef class InputContainer(Container):
         # was super confusing, so lets go in the complete opposite direction
         # and reject non-ints.
         if not isinstance(offset, (int, long)):
-            raise TypeError('Container.seek only accepts integer offset.', type(offset))
+            raise TypeError("Container.seek only accepts integer offset.", type(offset))
         cdef int64_t c_offset = offset
 
         cdef int flags = 0
@@ -248,7 +248,7 @@ cdef class InputContainer(Container):
         # We used to support whence in 'time', 'frame', and 'byte', but later
         # realized that FFmpged doens't implement the frame or byte ones.
         # We don't even document this anymore, but do allow 'time' to pass through.
-        if whence != 'time':
+        if whence != "time":
             raise ValueError("whence != 'time' is no longer supported")
 
         if backward:

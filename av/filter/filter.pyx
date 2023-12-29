@@ -26,7 +26,7 @@ cdef class Filter:
         if name is _cinit_sentinel:
             return
         if not isinstance(name, str):
-            raise TypeError('takes a filter name as a string')
+            raise TypeError("takes a filter name as a string")
         self.ptr = lib.avfilter_get_by_name(name)
         if not self.ptr:
             raise ValueError(f"no filter {name}")

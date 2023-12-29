@@ -212,7 +212,7 @@ cdef class OutputContainer(Container):
 
         # Assert the packet is in stream time.
         if packet.ptr.stream_index < 0 or <unsigned int>packet.ptr.stream_index >= self.ptr.nb_streams:
-            raise ValueError('Bad Packet stream_index.')
+            raise ValueError("Bad Packet stream_index.")
         cdef lib.AVStream *stream = self.ptr.streams[packet.ptr.stream_index]
         packet._rebase_time(stream.time_base)
 

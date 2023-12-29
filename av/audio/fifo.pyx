@@ -43,7 +43,7 @@ cdef class AudioFifo:
         """
 
         if frame is None:
-            raise TypeError('AudioFifo must be given an AudioFrame.')
+            raise TypeError("AudioFifo must be given an AudioFrame.")
 
         if not frame.ptr.nb_samples:
             return
@@ -70,7 +70,7 @@ cdef class AudioFifo:
             )
 
             if not self.ptr:
-                raise RuntimeError('Could not allocate AVAudioFifo.')
+                raise RuntimeError("Could not allocate AVAudioFifo.")
 
         # Make sure nothing changed.
         elif (
@@ -82,14 +82,14 @@ cdef class AudioFifo:
                 frame._time_base.den != self.template._time_base.den
             ))
         ):
-            raise ValueError('Frame does not match AudioFifo parameters.')
+            raise ValueError("Frame does not match AudioFifo parameters.")
 
         # Assert that the PTS are what we expect.
         cdef int64_t expected_pts
         if self.pts_per_sample and frame.ptr.pts != lib.AV_NOPTS_VALUE:
             expected_pts = <int64_t>(self.pts_per_sample * self.samples_written)
             if frame.ptr.pts != expected_pts:
-                raise ValueError('Frame.pts (%d) != expected (%d); fix or set to None.' % (frame.ptr.pts, expected_pts))
+                raise ValueError("Frame.pts (%d) != expected (%d); fix or set to None." % (frame.ptr.pts, expected_pts))
 
         err_check(lib.av_audio_fifo_write(
             self.ptr,

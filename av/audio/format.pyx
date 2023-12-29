@@ -1,7 +1,7 @@
 import sys
 
 
-cdef str container_format_postfix = 'le' if sys.byteorder == 'little' else 'be'
+cdef str container_format_postfix = "le" if sys.byteorder == "little" else "be"
 
 
 cdef object _cinit_bypass_sentinel
@@ -127,17 +127,17 @@ cdef class AudioFormat:
         """
         def __get__(self):
             if self.is_planar:
-                raise ValueError('no planar container formats')
+                raise ValueError("no planar container formats")
 
             if self.sample_fmt == lib.AV_SAMPLE_FMT_U8:
-                return 'u8'
+                return "u8"
             elif self.sample_fmt == lib.AV_SAMPLE_FMT_S16:
-                return 's16' + container_format_postfix
+                return "s16" + container_format_postfix
             elif self.sample_fmt == lib.AV_SAMPLE_FMT_S32:
-                return 's32' + container_format_postfix
+                return "s32" + container_format_postfix
             elif self.sample_fmt == lib.AV_SAMPLE_FMT_FLT:
-                return 'f32' + container_format_postfix
+                return "f32" + container_format_postfix
             elif self.sample_fmt == lib.AV_SAMPLE_FMT_DBL:
-                return 'f64' + container_format_postfix
+                return "f64" + container_format_postfix
 
-            raise ValueError('unknown layout')
+            raise ValueError("unknown layout")

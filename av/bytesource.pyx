@@ -27,7 +27,7 @@ cdef class ByteSource:
                 self.length = self.view.len
                 return
 
-        raise TypeError('expected bytes, bytearray or memoryview')
+        raise TypeError("expected bytes, bytearray or memoryview")
 
     def __dealloc__(self):
         if self.has_view:
