@@ -16,6 +16,21 @@ class Interpolation(EnumItem):
     LANCZOS: int
     SPLINE: int
 
+class Colorspace(EnumItem):
+    ITU709: int
+    FCC: int
+    ITU601: int
+    ITU624: int
+    SMPTE170M: int
+    SMPTE240M: int
+    DEFAULT: int
+    itu709: int
+    fcc: int
+    itu601: int
+    itu624: int
+    smpte240: int
+    default: int
+
 class ColorRange(EnumItem):
     UNSPECIFIED: int
     MPEG: int

@@ -3,7 +3,7 @@ from .plane import AudioPlane
 format_dtypes: dict[str, str]
 
 class AudioFrame:
-    planes: tuple[AudioPlane]
+    planes: tuple[AudioPlane, ...]
     samples: int
     sample_rate: int
     rate: int

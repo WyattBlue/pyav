@@ -1,5 +1,6 @@
 from av import error, logging
 
+from .audio.format import *
 from .audio.frame import *
 from .audio.layout import *
 from .audio.resampler import *

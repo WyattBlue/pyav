@@ -42,3 +42,5 @@ class ContainerFormat:
     ts_nonstrict: int
     ts_negative: int
     seek_to_pts: int
+
+formats_available: set[str]
