@@ -2,6 +2,7 @@ import numpy as np
 from PIL import Image
 
 from av.enum import EnumItem
+from av.frame import Frame
 
 from .format import VideoFormat
 from .plane import VideoPlane
@@ -16,11 +17,11 @@ class PictureType(EnumItem):
     SP: int
     BI: int
 
-class VideoFrame:
+class VideoFrame(Frame):
     format: VideoFormat
     pts: int
     time: float
-    planes: tuple[VideoPlane]
+    planes: tuple[VideoPlane, ...]
     width: int
     height: int
     key_frame: bool

@@ -14,3 +14,5 @@ from .format import *
 from .packet import *
 from .video.format import *
 from .video.frame import *
+
+__version__: str

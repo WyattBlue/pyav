@@ -1,6 +1,8 @@
 from fractions import Fraction
 from typing import Iterator, Literal, overload
 
+from av.video.stream import VideoStream
+
 class Codec:
     name: str
     mode: Literal["r", "w"]
@@ -47,10 +49,6 @@ class Stream:
     # From `codec_context`
     name: str
     bit_rate: int | None
-    width: int
-    height: int
-    pix_fmt: str | None
-    sample_aspect_ratio: Fraction | None
     sample_rate: int | None
     channels: int
     extradata_size: int
@@ -62,7 +60,7 @@ class Stream:
     def encode(self, frame=None): ...
 
 class StreamContainer:
-    video: tuple[Stream, ...]
+    video: tuple[VideoStream, ...]
     audio: tuple[Stream, ...]
     subtitles: tuple[Stream, ...]
     data: tuple[Stream, ...]

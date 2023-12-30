@@ -7,6 +7,7 @@ class SideData(EnumItem):
     DISPLAYMATRIX: int
 
 class Stream:
+    name: str | None
     id: int
     profile: str
     side_data: dict[str, str]

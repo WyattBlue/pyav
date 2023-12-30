@@ -1,8 +1,10 @@
+from av.frame import Frame
+
 from .plane import AudioPlane
 
 format_dtypes: dict[str, str]
 
-class AudioFrame:
+class AudioFrame(Frame):
     planes: tuple[AudioPlane, ...]
     samples: int
     sample_rate: int
