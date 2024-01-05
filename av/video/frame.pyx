@@ -241,7 +241,7 @@ cdef class VideoFrame(Frame):
 
         return Image.frombytes("RGB", (plane.width, plane.height), bytes(o_buf), "raw", "RGB", 0, 1)
 
-    def to_ndarray(self, **kwargs):
+    def to_ndarray(self, enable_fast_path=False, **kwargs):
         """Get a numpy array of this frame.
 
         Any ``**kwargs`` are passed to :meth:`.VideoReformatter.reformat`.
@@ -264,6 +264,7 @@ cdef class VideoFrame(Frame):
             assert frame.height % 2 == 0
             # Fast path for the case that the entire YUV data is contiguous
             if (
+                enable_fast_path and
                 frame.planes[0].line_size == frame.planes[0].width and
                 frame.planes[1].line_size == frame.planes[1].width and
                 frame.planes[2].line_size == frame.planes[2].width
