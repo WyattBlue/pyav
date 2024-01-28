@@ -91,16 +91,9 @@ cdef class AudioFrame(Frame):
         self.format = get_audio_format(<lib.AVSampleFormat>self.ptr.format)
 
     def __repr__(self):
-        return "<av.%s %d, pts=%s, %d samples at %dHz, %s, %s at 0x%x>" % (
-            self.__class__.__name__,
-            self.index,
-            self.pts,
-            self.samples,
-            self.rate,
-            self.layout.name,
-            self.format.name,
-            id(self),
-        )
+        name = self.__class__.__name__
+        layout = self.layout.name
+        return f"<av.{name} pts={self.pts}, {self.samples} samples at {self.rate}Hz, {layout}, {self.format.name} at {id(self):x}>"
 
     @staticmethod
     def from_ndarray(array, format="s16", layout="stereo"):

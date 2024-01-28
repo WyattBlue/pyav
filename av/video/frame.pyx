@@ -121,15 +121,8 @@ cdef class VideoFrame(Frame):
         self._np_buffer = None
 
     def __repr__(self):
-        return "<av.%s #%d, pts=%s %s %dx%d at 0x%x>" % (
-            self.__class__.__name__,
-            self.index,
-            self.pts,
-            self.format.name,
-            self.width,
-            self.height,
-            id(self),
-        )
+        name = self.__class__.__name__
+        return f"<av.{name} pts={self.pts} {self.format.name} {self.width}x{self.height} at 0x{id(self):x}>"
 
     @property
     def planes(self):

@@ -15,16 +15,10 @@ cdef class Frame:
             lib.av_frame_free(&self.ptr)
 
     def __repr__(self):
-        return "av.%s #%d pts=%s at 0x%x>" % (
-            self.__class__.__name__,
-            self.index,
-            self.pts,
-            id(self),
-        )
+        return f"av.{self.__class__.__name__} pts={self.pts} at 0x{id(self):x}>"
 
     cdef _copy_internal_attributes(self, Frame source, bint data_layout=True):
         """Mimic another frame."""
-        self.index = source.index
         self._time_base = source._time_base
         lib.av_frame_copy_props(self.ptr, source.ptr)
         if data_layout:

@@ -475,14 +475,7 @@ cdef class CodecContext:
         return res
 
     cdef _setup_decoded_frame(self, Frame frame, Packet packet):
-        # Propagate our manual times.
-        # While decoding, frame times are in stream time_base, which PyAV
-        # is carrying around.
-        # TODO: Somehow get this from the stream so we can not pass the
-        # packet here (because flushing packets are bogus).
         frame._time_base = packet._time_base
-
-        frame.index = self.ptr.frame_number - 1
 
     property name:
         def __get__(self):
