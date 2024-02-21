@@ -91,12 +91,9 @@ cdef class Stream:
         )
 
     def __repr__(self):
-        return "<av.%s #%d %s/%s at 0x%x>" % (
-            self.__class__.__name__,
-            self.index,
-            self.type or "<notype>",
-            self.name or "<nocodec>",
-            id(self),
+        return (
+            f"<av.{self.__class__.__name__} #{self.index} {self.type or '<notype>'}/"
+            f"{self.name or '<nocodec>'} at 0x{id(self):x}>"
         )
 
     def __getattr__(self, name):
