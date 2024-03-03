@@ -96,7 +96,7 @@ class CustomIOLogger:
         elif (flags & 2) == 2:
             mode = "wb"
         else:
-            raise RuntimeError(f"Unsupported io open mode {flags}")
+            raise RuntimeError("Unsupported io open mode {}".format(flags))
 
         return MethodLogger(open(url, mode))
 

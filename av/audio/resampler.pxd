@@ -5,6 +5,7 @@ from av.filter.graph cimport Graph
 
 
 cdef class AudioResampler:
+
     cdef readonly bint is_passthrough
 
     cdef AudioFrame template

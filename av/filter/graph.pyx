@@ -45,6 +45,7 @@ cdef class Graph:
         # We get auto-inserted stuff here.
         self._auto_register()
 
+
     def add(self, filter, args=None, **kwargs):
         cdef Filter cy_filter
         if isinstance(filter, str):
@@ -171,10 +172,10 @@ cdef class Graph:
         elif isinstance(frame, AudioFrame):
             contexts = self._context_by_type.get("abuffer", [])
         else:
-            raise ValueError("can only AudioFrame, VideoFrame or None; got %s" % type(frame))
+            raise ValueError(f"can only AudioFrame, VideoFrame or None; got {type(frame)}")
 
         if len(contexts) != 1:
-            raise ValueError("can only auto-push with single buffer; found %s" % len(contexts))
+            raise ValueError(f"can only auto-push with single buffer; found {len(contexts)}")
 
         contexts[0].push(frame)
 
@@ -184,6 +185,6 @@ cdef class Graph:
 
         nsinks = len(vsinks) + len(asinks)
         if nsinks != 1:
-            raise ValueError("can only auto-pull with single sink; found %s" % nsinks)
+            raise ValueError(f"can only auto-pull with single sink; found {nsinks}")
 
         return (vsinks or asinks)[0].pull()

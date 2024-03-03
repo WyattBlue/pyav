@@ -139,23 +139,29 @@ class UnknownCodecError(ValueError):
 
 
 cdef class Codec:
-    """
-    name: str
-    mode: "r" | "w"
+
+    """Codec(name, mode='r')
+
+    :param str name: The codec name.
+    :param str mode: ``'r'`` for decoding or ``'w'`` for encoding.
 
     This object exposes information about an available codec, and an avenue to
-    create a CodecContext to encode/decode directly.
+    create a :class:`.CodecContext` to encode/decode directly.
 
-    >>> codec = Codec("mpeg4", "r")
-    >>> codec.name
-    'mpeg4'
-    >>> codec.type
-    'video'
-    >>> codec.is_encoder
-    False
+    ::
+
+        >>> codec = Codec('mpeg4', 'r')
+        >>> codec.name
+        'mpeg4'
+        >>> codec.type
+        'video'
+        >>> codec.is_encoder
+        False
+
     """
 
     def __cinit__(self, name, mode="r"):
+
         if name is _cinit_sentinel:
             return
 
@@ -183,6 +189,7 @@ cdef class Codec:
             raise RuntimeError("Found codec does not match mode.", name, mode)
 
     cdef _init(self, name=None):
+
         if not self.ptr:
             raise UnknownCodecError(name)
 
@@ -198,27 +205,34 @@ cdef class Codec:
             raise RuntimeError("%s is both encoder and decoder.")
 
     def create(self):
+        """Create a :class:`.CodecContext` for this codec."""
         from .context import CodecContext
         return CodecContext.create(self)
 
-    property is_decoder:
-        def __get__(self):
-            return not self.is_encoder
+    @property
+    def is_decoder(self):
+        return not self.is_encoder
 
-    property descriptor:
-        def __get__(self): return wrap_avclass(self.ptr.priv_class)
+    @property
+    def descriptor(self): return wrap_avclass(self.ptr.priv_class)
 
-    property name:
-        def __get__(self): return self.ptr.name or ""
-    property long_name:
-        def __get__(self): return self.ptr.long_name or ""
+    @property
+    def name(self): return self.ptr.name or ""
+    @property
+    def long_name(self): return self.ptr.long_name or ""
 
     @property
     def type(self):
+        """
+        The media type of this codec.
+
+        E.g: ``'audio'``, ``'video'``, ``'subtitle'``.
+
+        """
         return lib.av_get_media_type_string(self.ptr.type)
 
-    property id:
-        def __get__(self): return self.ptr.id
+    @property
+    def id(self): return self.ptr.id
 
     @property
     def frame_rates(self):
@@ -278,6 +292,7 @@ cdef class Codec:
 
     @Properties.property
     def properties(self):
+        """Flag property of :class:`.Properties`"""
         return self.desc.props
 
     intra_only = properties.flag_property("INTRA_ONLY")
@@ -289,6 +304,7 @@ cdef class Codec:
 
     @Capabilities.property
     def capabilities(self):
+        """Flag property of :class:`.Capabilities`"""
         return self.ptr.capabilities
 
     draw_horiz_band = capabilities.flag_property("DRAW_HORIZ_BAND")
@@ -327,13 +343,17 @@ cdef get_codec_names():
             break
     return names
 
-
 codecs_available = get_codec_names()
+
+
 codec_descriptor = wrap_avclass(lib.avcodec_get_class())
 
 
 def dump_codecs():
-    print """Codecs:
+    """Print information about available codecs."""
+
+    print(
+        """Codecs:
  D..... = Decoding supported
  .E.... = Encoding supported
  ..V... = Video codec
@@ -343,6 +363,7 @@ def dump_codecs():
  ....L. = Lossy compression
  .....S = Lossless compression
  ------"""
+    )
 
     for name in sorted(codecs_available):
         try:
@@ -359,15 +380,18 @@ def dump_codecs():
         codec = e_codec or d_codec
 
         try:
-            print " %s%s%s%s%s%s %-18s %s" % (
-                ".D"[bool(d_codec)],
-                ".E"[bool(e_codec)],
-                codec.type[0].upper(),
-                ".I"[codec.intra_only],
-                ".L"[codec.lossy],
-                ".S"[codec.lossless],
-                codec.name,
-                codec.long_name
+            print(
+                " %s%s%s%s%s%s %-18s %s"
+                % (
+                    ".D"[bool(d_codec)],
+                    ".E"[bool(e_codec)],
+                    codec.type[0].upper(),
+                    ".I"[codec.intra_only],
+                    ".L"[codec.lossy],
+                    ".S"[codec.lossless],
+                    codec.name,
+                    codec.long_name,
+                )
             )
         except Exception as e:
-            print "...... %-18s ERROR: %s" % (codec.name, e)
+            print(f"...... {codec.name:<18} ERROR: {e}")

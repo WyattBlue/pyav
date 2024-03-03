@@ -7,7 +7,7 @@ from urllib.request import urlopen
 log = logging.getLogger(__name__)
 
 
-def iter_data_dirs(check_writable: bool = False):
+def iter_data_dirs(check_writable=False):
     try:
         yield os.environ["PYAV_TESTDATA_DIR"]
     except KeyError:
@@ -42,7 +42,7 @@ def iter_data_dirs(check_writable: bool = False):
     yield os.path.join(os.path.expanduser("~"), ".pyav", "datasets")
 
 
-def cached_download(url: str, name: str) -> str:
+def cached_download(url, name):
     """Download the data at a URL, and cache it under the given name.
 
     The file is stored under `pyav/test` with the given name in the directory
@@ -96,15 +96,27 @@ def cached_download(url: str, name: str) -> str:
     return path
 
 
-def fate(name: str) -> str:
+def fate(name):
+    """Download and return a path to a sample from the FFmpeg test suite.
+
+    Data is handled by :func:`cached_download`.
+
+    See the `FFmpeg Automated Test Environment <https://www.ffmpeg.org/fate.html>`_
+
+    """
     return cached_download(
-        f"http://fate.ffmpeg.org/fate-suite/{name}",
+        "http://fate.ffmpeg.org/fate-suite/" + name,
         os.path.join("fate-suite", name.replace("/", os.path.sep)),
     )
 
 
-def curated(name: str) -> str:
+def curated(name):
+    """Download and return a path to a sample that is curated by the PyAV developers.
+
+    Data is handled by :func:`cached_download`.
+
+    """
     return cached_download(
-        f"https://pyav.org/datasets/{name}",
+        "https://pyav.org/datasets/" + name,
         os.path.join("pyav-curated", name.replace("/", os.path.sep)),
     )

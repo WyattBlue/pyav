@@ -40,10 +40,39 @@ cpdef tag_to_code(bytes tag):
     """
     if len(tag) != 4:
         raise ValueError("Error tags are 4 bytes.")
-    return tag[0] + (tag[1] << 8) + (tag[2] << 16) + (tag[3] << 24)
+    return (
+        (tag[0]) +
+        (tag[1] << 8) +
+        (tag[2] << 16) +
+        (tag[3] << 24)
+    )
 
 
 class FFmpegError(Exception):
+    """Exception class for errors from within FFmpeg.
+
+    .. attribute:: errno
+
+        FFmpeg's integer error code.
+
+    .. attribute:: strerror
+
+        FFmpeg's error message.
+
+    .. attribute:: filename
+
+        The filename that was being operated on (if available).
+
+    .. attribute:: type
+
+        The :class:`av.error.ErrorType` enum value for the error type.
+
+    .. attribute:: log
+
+        The tuple from :func:`av.logging.get_last_log`, or ``None``.
+
+    """
+
     def __init__(self, code, message, filename=None, log=None):
         args = [code, message]
         if filename or log:
@@ -187,7 +216,7 @@ classes = {}
 
 def _extend_builtin(name, codes):
     base = getattr(__builtins__, name, OSError)
-    cls = type(name, (FFmpegError, base), {"__module__": __name__})
+    cls = type(name, (FFmpegError, base), dict(__module__=__name__))
 
     # Register in builder.
     for code in codes:
@@ -238,7 +267,7 @@ for enum_name, code, name, base in _ffmpeg_specs:
     else:
         bases = (FFmpegError, base)
 
-    cls = type(name, bases, {"__module__": __name__})
+    cls = type(name, bases, dict(__module__=__name__))
 
     # Register in builder.
     classes[code] = cls

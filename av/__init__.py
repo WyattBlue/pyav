@@ -6,7 +6,7 @@ import sys
 # directory. We work around this by adding `av.libs` to the PATH.
 if (
     os.name == "nt"
-    and sys.version_info[:2] == (3, 9)
+    and sys.version_info[:2] in ((3, 8), (3, 9))
     and os.path.exists(os.path.join(sys.base_prefix, "conda-meta"))
 ):
     os.environ["PATH"] = (

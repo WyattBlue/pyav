@@ -6,7 +6,11 @@ from av.enum cimport define_enum
 from av.error cimport err_check
 from av.utils cimport check_ndarray, check_ndarray_shape
 from av.video.format cimport get_pix_fmt, get_video_format
-from av.video.plane cimport VideoPlane, YUVPlanes
+from av.video.plane cimport VideoPlane
+
+import warnings
+
+from av.deprecation import AVDeprecationWarning
 
 
 cdef object _cinit_bypass_sentinel
@@ -64,13 +68,11 @@ cdef useful_array(VideoPlane plane, unsigned int bytes_per_pixel=1, str dtype="u
     We are simply discarding any padding which was added for alignment.
     """
     import numpy as np
-
     cdef size_t total_line_size = abs(plane.line_size)
     cdef size_t useful_line_size = plane.width * bytes_per_pixel
     arr = np.frombuffer(plane, np.uint8)
     if total_line_size != useful_line_size:
         arr = arr.reshape(-1, total_line_size)[:, 0:useful_line_size].reshape(-1)
-
     return arr.view(np.dtype(dtype))
 
 
@@ -121,13 +123,15 @@ cdef class VideoFrame(Frame):
         self._np_buffer = None
 
     def __repr__(self):
-        name = self.__class__.__name__
-        return f"<av.{name} pts={self.pts} {self.format.name} {self.width}x{self.height} at 0x{id(self):x}>"
+        return (
+            f"<av.{self.__class__.__name__} #{self.index}, pts={self.pts} "
+            f"{self.format.name} {self.width}x{self.height} at 0x{id(self):x}>"
+        )
 
     @property
     def planes(self):
         """
-        planes(self) -> tuple[VideoPlane ...]
+        A tuple of :class:`.VideoPlane` objects.
         """
         # We need to detect which planes actually exist, but also contrain
         # ourselves to the maximum plane count (as determined only by VideoFrames
@@ -144,28 +148,39 @@ cdef class VideoFrame(Frame):
         cdef int plane_count = 0
         while plane_count < max_plane_count and self.ptr.extended_data[plane_count]:
             plane_count += 1
-
         return tuple([VideoPlane(self, i) for i in range(plane_count)])
 
-    property width:
-        def __get__(self): return self.ptr.width
+    @property
+    def width(self):
+        """Width of the image, in pixels."""
+        return self.ptr.width
 
-    property height:
-        def __get__(self): return self.ptr.height
 
-    property key_frame:
-        """
-        -> bool
-        Wraps AVFrame.key_frame
-        """
-        def __get__(self): return self.ptr.key_frame
+    @property
+    def height(self):
+        """Height of the image, in pixels."""
+        return self.ptr.height
 
-    property interlaced_frame:
+
+    @property
+    def key_frame(self):
+        """Is this frame a key frame?
+
+        Wraps :ffmpeg:`AVFrame.key_frame`.
+
         """
-        -> bool
-        Wraps AVFrame.interlaced_frame
+        return self.ptr.key_frame
+
+
+    @property
+    def interlaced_frame(self):
+        """Is this frame an interlaced or progressive?
+
+        Wraps :ffmpeg:`AVFrame.interlaced_frame`.
+
         """
-        def __get__(self): return self.ptr.interlaced_frame
+        return self.ptr.interlaced_frame
+
 
     @property
     def pict_type(self):
@@ -207,14 +222,39 @@ cdef class VideoFrame(Frame):
         self.ptr.color_range = value
 
     def reformat(self, *args, **kwargs):
+        """reformat(width=None, height=None, format=None, src_colorspace=None, dst_colorspace=None, interpolation=None)
+
+        Create a new :class:`VideoFrame` with the given width/height/format/colorspace.
+
+        .. seealso:: :meth:`.VideoReformatter.reformat` for arguments.
+
+        """
         if not self.reformatter:
             self.reformatter = VideoReformatter()
         return self.reformatter.reformat(self, *args, **kwargs)
 
     def to_rgb(self, **kwargs):
+        """Get an RGB version of this frame.
+
+        Any ``**kwargs`` are passed to :meth:`.VideoReformatter.reformat`.
+
+        >>> frame = VideoFrame(1920, 1080)
+        >>> frame.format.name
+        'yuv420p'
+        >>> frame.to_rgb().format.name
+        'rgb24'
+
+        """
         return self.reformat(format="rgb24", **kwargs)
 
     def to_image(self, **kwargs):
+        """Get an RGB ``PIL.Image`` of this frame.
+
+        Any ``**kwargs`` are passed to :meth:`.VideoReformatter.reformat`.
+
+        .. note:: PIL or Pillow must be installed.
+
+        """
         from PIL import Image
         cdef VideoPlane plane = self.reformat(format="rgb24", **kwargs).planes[0]
 
@@ -234,7 +274,7 @@ cdef class VideoFrame(Frame):
 
         return Image.frombytes("RGB", (plane.width, plane.height), bytes(o_buf), "raw", "RGB", 0, 1)
 
-    def to_ndarray(self, enable_fast_path=False, **kwargs):
+    def to_ndarray(self, **kwargs):
         """Get a numpy array of this frame.
 
         Any ``**kwargs`` are passed to :meth:`.VideoReformatter.reformat`.
@@ -255,22 +295,11 @@ cdef class VideoFrame(Frame):
         if frame.format.name in ("yuv420p", "yuvj420p"):
             assert frame.width % 2 == 0
             assert frame.height % 2 == 0
-            # Fast path for the case that the entire YUV data is contiguous
-            if (
-                enable_fast_path and
-                frame.planes[0].line_size == frame.planes[0].width and
-                frame.planes[1].line_size == frame.planes[1].width and
-                frame.planes[2].line_size == frame.planes[2].width
-            ):
-                yuv_planes = YUVPlanes(frame, 0)
-                return useful_array(yuv_planes).reshape(frame.height * 3 // 2, frame.width)
-            else:
-                # Otherwise, we need to copy the data through the use of np.hstack
-                return np.hstack((
-                    useful_array(frame.planes[0]),
-                    useful_array(frame.planes[1]),
-                    useful_array(frame.planes[2])
-                )).reshape(-1, frame.width)
+            return np.hstack((
+                useful_array(frame.planes[0]),
+                useful_array(frame.planes[1]),
+                useful_array(frame.planes[2])
+            )).reshape(-1, frame.width)
         elif frame.format.name in ("yuv444p", "yuvj444p"):
             return np.hstack((
                 useful_array(frame.planes[0]),
@@ -336,6 +365,9 @@ cdef class VideoFrame(Frame):
 
     @staticmethod
     def from_image(img):
+        """
+        Construct a frame from a ``PIL.Image``.
+        """
         if img.mode != "RGB":
             img = img.convert("RGB")
 
@@ -347,7 +379,7 @@ cdef class VideoFrame(Frame):
     @staticmethod
     def from_numpy_buffer(array, format="rgb24"):
         if format in ("rgb24", "bgr24"):
-            check_ndarray(array, 'uint8', 3)
+            check_ndarray(array, "uint8", 3)
             check_ndarray_shape(array, array.shape[2] == 3)
             height, width = array.shape[:2]
         elif format in ("gray", "gray8", "rgb8", "bgr8"):
@@ -426,6 +458,16 @@ cdef class VideoFrame(Frame):
 
     @staticmethod
     def from_ndarray(array, format="rgb24"):
+        """
+        Construct a frame from a numpy array.
+
+        .. note:: For formats which expect an array of ``uint16``, the samples
+        must be in the system's native byte order.
+
+        .. note:: for ``pal8``, an ``(image, palette)`` pair must be passed.
+        `palette` must have shape (256, 4) and is given in ARGB format
+        (PyAV will swap bytes if needed).
+        """
         if format == "pal8":
             array, palette = array
             check_ndarray(array, "uint8", 2)
@@ -528,11 +570,16 @@ cdef class VideoFrame(Frame):
             copy_array_to_plane(flat[uv_start:], frame.planes[1], 2)
             return frame
         else:
-            raise ValueError(
-                f"Conversion from numpy array with format `{format}` is not yet supported"
-            )
+            raise ValueError(f"Conversion from numpy array with format `{format}` is not yet supported")
 
         frame = VideoFrame(array.shape[1], array.shape[0], format)
         copy_array_to_plane(array, frame.planes[0], 1 if array.ndim == 2 else array.shape[2])
 
         return frame
+
+    def __getattribute__(self, attribute):
+        # This method should be deleted when `frame.index` is removed
+        if attribute == "index":
+            warnings.warn("Using `frame.index` is deprecated.", AVDeprecationWarning)
+
+        return Frame.__getattribute__(self, attribute)

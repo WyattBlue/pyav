@@ -29,6 +29,7 @@ class TestCodecs(TestCase):
         self.assertIn(c.id, (12, 13))
         self.assertTrue(c.is_decoder)
         self.assertFalse(c.is_encoder)
+        self.assertTrue(c.delay)
 
         # audio
         self.assertIsNone(c.audio_formats)
@@ -50,6 +51,7 @@ class TestCodecs(TestCase):
         self.assertIn(c.id, (12, 13))
         self.assertTrue(c.is_encoder)
         self.assertFalse(c.is_decoder)
+        self.assertTrue(c.delay)
 
         # audio
         self.assertIsNone(c.audio_formats)
@@ -71,6 +73,7 @@ class TestCodecs(TestCase):
         self.assertEqual(c.type, "audio")
         self.assertTrue(c.is_decoder)
         self.assertFalse(c.is_encoder)
+        self.assertTrue(c.delay)
 
         # audio
         self.assertIsNone(c.audio_formats)
@@ -88,6 +91,7 @@ class TestCodecs(TestCase):
         self.assertEqual(c.type, "audio")
         self.assertTrue(c.is_encoder)
         self.assertFalse(c.is_decoder)
+        self.assertTrue(c.delay)
 
         # audio
         formats = c.audio_formats

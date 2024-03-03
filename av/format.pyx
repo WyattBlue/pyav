@@ -21,8 +21,7 @@ Flags = define_enum("Flags", __name__, (
     ("NEEDNUMBER", lib.AVFMT_NEEDNUMBER, "Needs '%d' in filename."),
     ("SHOW_IDS", lib.AVFMT_SHOW_IDS, "Show format stream IDs numbers."),
     ("GLOBALHEADER", lib.AVFMT_GLOBALHEADER, "Format wants global header."),
-    ("NOTIMESTAMPS", lib.AVFMT_NOTIMESTAMPS,
-        "Format does not need / have any timestamps."),
+    ("NOTIMESTAMPS", lib.AVFMT_NOTIMESTAMPS, "Format does not need / have any timestamps."),
     ("GENERIC_INDEX", lib.AVFMT_GENERIC_INDEX, "Use generic index building code."),
     ("TS_DISCONT", lib.AVFMT_TS_DISCONT,
         """Format allows timestamp discontinuities.
@@ -34,8 +33,7 @@ Flags = define_enum("Flags", __name__, (
         "Format does not allow to fall back on binary search via read_timestamp"),
     ("NOGENSEARCH", lib.AVFMT_NOGENSEARCH,
         "Format does not allow to fall back on generic search"),
-    ("NO_BYTE_SEEK", lib.AVFMT_NO_BYTE_SEEK,
-        "Format does not allow seeking by bytes"),
+    ("NO_BYTE_SEEK", lib.AVFMT_NO_BYTE_SEEK, "Format does not allow seeking by bytes"),
     ("ALLOW_FLUSH", lib.AVFMT_ALLOW_FLUSH,
         """Format allows flushing. If not set, the muxer will not receive a NULL
         packet in the write_packet function."""),
@@ -52,6 +50,15 @@ Flags = define_enum("Flags", __name__, (
 
 
 cdef class ContainerFormat:
+
+    """Descriptor of a container format.
+
+    :param str name: The name of the format.
+    :param str mode: ``'r'`` or ``'w'`` for input and output formats; defaults
+        to None which will grab either.
+
+    """
+
     def __cinit__(self, name, mode=None):
         if name is _cinit_bypass_sentinel:
             return
@@ -69,64 +76,64 @@ cdef class ContainerFormat:
             self.optr = lib.av_guess_format(name, NULL, NULL)
 
         if not self.iptr and not self.optr:
-            raise ValueError("no container format %r" % name)
+            raise ValueError(f"no container format {name!r}")
 
     def __repr__(self):
         return f"<av.{self.__class__.__name__} {self.name!r}>"
 
-    property descriptor:
-        def __get__(self):
-            if self.iptr:
-                return wrap_avclass(self.iptr.priv_class)
-            else:
-                return wrap_avclass(self.optr.priv_class)
+    @property
+    def descriptor(self):
+        if self.iptr:
+            return wrap_avclass(self.iptr.priv_class)
+        else:
+            return wrap_avclass(self.optr.priv_class)
 
-    property options:
-        def __get__(self):
-            return self.descriptor.options
+    @property
+    def options(self):
+        return self.descriptor.options
 
-    property input:
+    @property
+    def input(self):
         """An input-only view of this format."""
-        def __get__(self):
-            if self.iptr == NULL:
-                return None
-            elif self.optr == NULL:
-                return self
-            else:
-                return build_container_format(self.iptr, NULL)
+        if self.iptr == NULL:
+            return None
+        elif self.optr == NULL:
+            return self
+        else:
+            return build_container_format(self.iptr, NULL)
 
-    property output:
+    @property
+    def output(self):
         """An output-only view of this format."""
-        def __get__(self):
-            if self.optr == NULL:
-                return None
-            elif self.iptr == NULL:
-                return self
-            else:
-                return build_container_format(NULL, self.optr)
+        if self.optr == NULL:
+            return None
+        elif self.iptr == NULL:
+            return self
+        else:
+            return build_container_format(NULL, self.optr)
 
-    property is_input:
-        def __get__(self):
-            return self.iptr != NULL
+    @property
+    def is_input(self):
+        return self.iptr != NULL
 
-    property is_output:
-        def __get__(self):
-            return self.optr != NULL
+    @property
+    def is_output(self):
+        return self.optr != NULL
 
-    property long_name:
-        def __get__(self):
-            # We prefer the output names since the inputs may represent
-            # multiple formats.
-            return self.optr.long_name if self.optr else self.iptr.long_name
+    @property
+    def long_name(self):
+        # We prefer the output names since the inputs may represent
+        # multiple formats.
+        return self.optr.long_name if self.optr else self.iptr.long_name
 
-    property extensions:
-        def __get__(self):
-            cdef set exts = set()
-            if self.iptr and self.iptr.extensions:
-                exts.update(self.iptr.extensions.split(","))
-            if self.optr and self.optr.extensions:
-                exts.update(self.optr.extensions.split(","))
-            return exts
+    @property
+    def extensions(self):
+        cdef set exts = set()
+        if self.iptr and self.iptr.extensions:
+            exts.update(self.iptr.extensions.split(","))
+        if self.optr and self.optr.extensions:
+            exts.update(self.optr.extensions.split(","))
+        return exts
 
     @Flags.property
     def flags(self):
@@ -180,5 +187,6 @@ cdef get_input_format_names():
 
 formats_available = get_output_format_names()
 formats_available.update(get_input_format_names())
+
 
 format_descriptor = wrap_avclass(lib.avformat_get_class())

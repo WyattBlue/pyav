@@ -1,5 +1,8 @@
-Cython
+autopep8
+black
+cython
 flake8
 isort
 numpy
-Pillow
+pillow
+sphinx==5.1.0

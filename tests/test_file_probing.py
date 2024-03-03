@@ -1,3 +1,4 @@
+import warnings
 from fractions import Fraction
 
 import av
@@ -25,6 +26,7 @@ class TestAudioProbe(TestCase):
     def test_stream_probing(self):
         stream = self.file.streams[0]
 
+        # check __repr__
         self.assertTrue(
             str(stream).startswith(
                 "<av.AudioStream #0 aac_latm at 48000Hz, stereo, fltp at "
@@ -88,6 +90,7 @@ class TestAudioProbeCorrupt(TestCase):
     def test_stream_probing(self):
         stream = self.file.streams[0]
 
+        # ensure __repr__ does not crash
         self.assertTrue(
             str(stream).startswith(
                 "<av.AudioStream #0 flac at 0Hz, 0 channels, None at "
@@ -151,6 +154,7 @@ class TestDataProbe(TestCase):
                 None,
             ),
             ("modification_date", "2016-09-20T20:33:26.000000Z", None),
+            # Next one is FFmpeg >= 4.2.
             (
                 "operational_pattern_ul",
                 "060e2b34.04010102.0d010201.10030000",
@@ -304,7 +308,6 @@ class TestVideoProbe(TestCase):
         self.assertEqual(stream.display_aspect_ratio, Fraction(4, 3))
         self.assertEqual(stream.format.name, "yuv420p")
         self.assertFalse(stream.has_b_frames)
-        self.assertEqual(stream.gop_size, 12)
         self.assertEqual(stream.height, 576)
         self.assertEqual(stream.max_bit_rate, None)
         self.assertEqual(stream.sample_aspect_ratio, Fraction(16, 15))
@@ -315,6 +318,20 @@ class TestVideoProbe(TestCase):
         # confirm.
         self.assertIn(stream.coded_width, (720, 0))
         self.assertIn(stream.coded_height, (576, 0))
+
+        # Deprecated properties.
+        with warnings.catch_warnings(record=True) as captured:
+            stream.framerate
+            self.assertEqual(
+                captured[0].message.args[0],
+                "VideoStream.framerate is deprecated as it is not always set; please use VideoStream.average_rate.",
+            )
+        with warnings.catch_warnings(record=True) as captured:
+            stream.rate
+            self.assertEqual(
+                captured[0].message.args[0],
+                "VideoStream.rate is deprecated as it is not always set; please use VideoStream.average_rate.",
+            )
 
 
 class TestVideoProbeCorrupt(TestCase):
@@ -364,7 +381,6 @@ class TestVideoProbeCorrupt(TestCase):
         self.assertEqual(stream.display_aspect_ratio, None)
         self.assertEqual(stream.format, None)
         self.assertFalse(stream.has_b_frames)
-        self.assertEqual(stream.gop_size, 12)
         self.assertEqual(stream.height, 0)
         self.assertEqual(stream.max_bit_rate, None)
         self.assertEqual(stream.sample_aspect_ratio, None)

@@ -1,5 +1,5 @@
 cimport libav as lib
-from libc.stdint cimport int16_t, int32_t, uint8_t, uint16_t, uint64_t
+from libc.stdint cimport uint8_t
 
 from av.frame cimport Frame
 from av.video.format cimport VideoFormat

@@ -168,7 +168,6 @@ cdef global_captures = []
 cdef thread_captures = {}
 
 cdef class Capture:
-
     """A context manager for capturing logs.
 
     :param bool local: Should logs from all threads be captured, or just one
@@ -214,6 +213,12 @@ cdef lib.AVClass log_class
 log_class.item_name = log_context_name
 
 cpdef log(int level, str name, str message):
+    """Send a log through the library logging system.
+
+    This is mostly for testing.
+
+    """
+
     cdef log_context *obj = <log_context*>malloc(sizeof(log_context))
     obj.class_ = &log_class
     obj.name = name
@@ -222,6 +227,7 @@ cpdef log(int level, str name, str message):
 
 
 cdef void log_callback(void *ptr, int level, const char *format, lib.va_list args) noexcept nogil:
+
     cdef bint inited = lib.Py_IsInitialized()
     if not inited and not print_after_shutdown:
         return
@@ -330,4 +336,8 @@ cdef log_callback_emit(log):
     logger.log(py_level, message.strip())
 
 
-lib.av_log_set_callback(log_callback)
+# Start the magic!
+# We allow the user to fully disable the logging system as it will not play
+# nicely with subinterpreters due to FFmpeg-created threads.
+if os.environ.get("PYAV_LOGGING") != "off":
+    lib.av_log_set_callback(log_callback)

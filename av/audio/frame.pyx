@@ -4,6 +4,10 @@ from av.audio.plane cimport AudioPlane
 from av.error cimport err_check
 from av.utils cimport check_ndarray, check_ndarray_shape
 
+import warnings
+
+from av.deprecation import AVDeprecationWarning
+
 
 cdef object _cinit_bypass_sentinel
 
@@ -33,7 +37,6 @@ cdef AudioFrame alloc_audio_frame():
 
 
 cdef class AudioFrame(Frame):
-
     """A frame of audio."""
 
     def __cinit__(self, format="s16", layout="stereo", samples=0, align=1):
@@ -57,7 +60,6 @@ cdef class AudioFrame(Frame):
         self.ptr.channels = self.layout.nb_channels
 
         if self.layout.channels and nb_samples:
-
             # Cleanup the old buffer.
             lib.av_freep(&self._buffer)
 
@@ -91,9 +93,10 @@ cdef class AudioFrame(Frame):
         self.format = get_audio_format(<lib.AVSampleFormat>self.ptr.format)
 
     def __repr__(self):
-        name = self.__class__.__name__
-        layout = self.layout.name
-        return f"<av.{name} pts={self.pts}, {self.samples} samples at {self.rate}Hz, {layout}, {self.format.name} at {id(self):x}>"
+        return (
+           f"<av.{self.__class__.__name__} {self.index} pts={self.pts}, {self.samples} "
+           f"samples at {self.rate}Hz, {self.layout.name}, {self.format.name} at 0x{id(self):x}"
+        )
 
     @staticmethod
     def from_ndarray(array, format="s16", layout="stereo"):
@@ -106,7 +109,9 @@ cdef class AudioFrame(Frame):
         try:
             dtype = np.dtype(format_dtypes[format])
         except KeyError:
-            raise ValueError("Conversion from numpy array with format `%s` is not yet supported" % format)
+            raise ValueError(
+                f"Conversion from numpy array with format `{format}` is not yet supported"
+            )
 
         # check input format
         nb_channels = len(AudioLayout(layout).channels)
@@ -136,34 +141,36 @@ cdef class AudioFrame(Frame):
 
         return tuple([AudioPlane(self, i) for i in range(plane_count)])
 
-    property samples:
+    @property
+    def samples(self):
         """
         Number of audio samples (per channel).
 
         :type: int
         """
-        def __get__(self):
-            return self.ptr.nb_samples
+        return self.ptr.nb_samples
 
-    property sample_rate:
+    @property
+    def sample_rate(self):
         """
         Sample rate of the audio data, in samples per second.
 
         :type: int
         """
-        def __get__(self):
-            return self.ptr.sample_rate
+        return self.ptr.sample_rate
 
-        def __set__(self, value):
-            self.ptr.sample_rate = value
+    @sample_rate.setter
+    def sample_rate(self, value):
+        self.ptr.sample_rate = value
 
-    property rate:
+    @property
+    def rate(self):
         """Another name for :attr:`sample_rate`."""
-        def __get__(self):
-            return self.ptr.sample_rate
+        return self.ptr.sample_rate
 
-        def __set__(self, value):
-            self.ptr.sample_rate = value
+    @rate.setter
+    def rate(self, value):
+        self.ptr.sample_rate = value
 
     def to_ndarray(self, **kwargs):
         """Get a numpy array of this frame.
@@ -173,16 +180,21 @@ cdef class AudioFrame(Frame):
         """
         import numpy as np
 
-        # map avcodec type to numpy type
         try:
             dtype = np.dtype(format_dtypes[self.format.name])
         except KeyError:
-            raise ValueError("Conversion from {!r} format to numpy array is not supported.".format(self.format.name))
+            raise ValueError(f"Conversion from {self.format.name!r} format to numpy array is not supported.")
 
         if self.format.is_planar:
             count = self.samples
         else:
             count = self.samples * len(self.layout.channels)
 
-        # convert and return data
         return np.vstack([np.frombuffer(x, dtype=dtype, count=count) for x in self.planes])
+
+    def __getattribute__(self, attribute):
+        # This method should be deleted when `frame.index` is removed
+        if attribute == "index":
+            warnings.warn("Using `frame.index` is deprecated.", AVDeprecationWarning)
+
+        return Frame.__getattribute__(self, attribute)

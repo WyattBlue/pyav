@@ -4,6 +4,7 @@ from av.descriptor cimport Descriptor
 
 
 cdef class Filter:
+
     cdef const lib.AVFilter *ptr
 
     cdef object _inputs

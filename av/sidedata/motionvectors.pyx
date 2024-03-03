@@ -16,6 +16,7 @@ cdef class _MotionVectors(SideData):
         return f"<av.sidedata.MotionVectors {self.ptr.size} bytes of {len(self)} vectors at 0x{<unsigned int>self.ptr.data:0x}"
 
     def __getitem__(self, int index):
+
         try:
             return self._vectors[index]
         except KeyError:

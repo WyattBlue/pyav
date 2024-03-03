@@ -5,6 +5,7 @@ from av.sidedata.sidedata cimport _SideDataContainer
 
 
 cdef class Frame:
+
     cdef lib.AVFrame *ptr
 
     # We define our own time.

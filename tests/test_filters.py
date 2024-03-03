@@ -15,6 +15,15 @@ from .common import Image, TestCase, fate_suite
 def generate_audio_frame(
     frame_num, input_format="s16", layout="stereo", sample_rate=44100, frame_size=1024
 ):
+    """
+    Generate audio frame representing part of the sinusoidal wave
+    :param input_format: default: s16
+    :param layout: default: stereo
+    :param sample_rate: default: 44100
+    :param frame_size: default: 1024
+    :param frame_num: frame number
+    :return: audio frame for sinusoidal wave audio signal slice
+    """
     frame = AudioFrame(format=input_format, layout=layout, samples=frame_size)
     frame.sample_rate = sample_rate
     frame.pts = frame_num * frame_size

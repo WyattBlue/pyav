@@ -46,7 +46,6 @@ ColorRange = define_enum("ColorRange", __name__, (
     ("NB", lib.AVCOL_RANGE_NB, "Not part of ABI"),
 ))
 
-
 cdef class VideoReformatter:
     """An object for reformatting size and pixel format of :class:`.VideoFrame`.
 

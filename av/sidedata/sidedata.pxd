@@ -16,6 +16,7 @@ cdef class SideData(Buffer):
 cdef SideData wrap_side_data(Frame frame, int index)
 
 cdef class _SideDataContainer:
+
     cdef Frame frame
 
     cdef list _by_index

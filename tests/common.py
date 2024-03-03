@@ -140,12 +140,12 @@ class TestCase(_Base):
             msg = ""
             for equal in it:
                 if not equal:
-                    msg += "- arrays differ at index {}; {} {}\n".format(
+                    msg += "- arrays differ at index %s; %s %s\n" % (
                         it.multi_index,
                         a[it.multi_index],
                         b[it.multi_index],
                     )
-            self.fail(f"ndarrays contents differ\n{msg}")
+            self.fail("ndarrays contents differ\n%s" % msg)
 
     def assertImagesAlmostEqual(self, a, b, epsilon=0.1, *args):
         self.assertEqual(a.size, b.size, "sizes dont match")
@@ -154,40 +154,6 @@ class TestCase(_Base):
         for i, ax, bx in zip(range(len(a)), a, b):
             diff = sum(abs(ac / 256 - bc / 256) for ac, bc in zip(ax, bx)) / 3
             if diff > epsilon:
-                self.fail(f"images differed by {diff} at index {i}; {ax} {bx}")
-
-    def assertIs(self, a, b, msg=None):
-        if a is not b:
-            self.fail(
-                msg
-                or "%r at 0x%x is not %r at 0x%x; %r is not %r"
-                % (type(a), id(a), type(b), id(b), a, b)
-            )
-
-    def assertIsNot(self, a, b, msg=None):
-        if a is b:
-            self.fail(msg or f"both are {type(a)!r} at 0x{id(a):x}; {a!r}")
-
-    def assertIsNone(self, x, msg=None):
-        if x is not None:
-            self.fail(msg or f"is not None; {x!r}")
-
-    def assertIsNotNone(self, x, msg=None):
-        if x is None:
-            self.fail(msg or f"is None; {x!r}")
-
-    def assertIn(self, a, b, msg=None):
-        if a not in b:
-            self.fail(msg or f"{a!r} not in {b!r}")
-
-    def assertNotIn(self, a, b, msg=None):
-        if a in b:
-            self.fail(msg or f"{a!r} in {b!r}")
-
-    def assertIsInstance(self, instance, types, msg=None):
-        if not isinstance(instance, types):
-            self.fail(msg or f"not an instance of {types!r}; {instance!r}")
-
-    def assertNotIsInstance(self, instance, types, msg=None):
-        if isinstance(instance, types):
-            self.fail(msg or f"is an instance of {types!r}; {instance!r}")
+                self.fail(
+                    "images differed by %s at index %d; %s %s" % (diff, i, ax, bx)
+                )

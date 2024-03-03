@@ -29,8 +29,14 @@ cdef dict avdict_to_dict(lib.AVDictionary *input, str encoding, str errors):
 cdef dict_to_avdict(lib.AVDictionary **dst, dict src, str encoding, str errors):
     lib.av_dict_free(dst)
     for key, value in src.items():
-        err_check(lib.av_dict_set(dst, _encode(key, encoding, errors),
-                                  _encode(value, encoding, errors), 0))
+        err_check(
+            lib.av_dict_set(
+                dst,
+                _encode(key, encoding, errors),
+                _encode(value, encoding, errors),
+                0
+            )
+        )
 
 
 # === FRACTIONS ===
@@ -83,3 +89,9 @@ cdef flag_in_bitfield(uint64_t bitfield, uint64_t flag):
     if not flag:
         return None
     return bool(bitfield & flag)
+
+
+# === BACKWARDS COMPAT ===
+
+from .error import FFmpegError as AVError
+from .error import err_check

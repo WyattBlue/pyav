@@ -11,5 +11,6 @@ cdef class _MotionVectors(SideData):
 
 
 cdef class MotionVector:
+
     cdef _MotionVectors parent
     cdef lib.AVMotionVector *ptr

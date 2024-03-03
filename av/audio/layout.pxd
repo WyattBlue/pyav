@@ -18,6 +18,7 @@ cdef class AudioLayout:
 
 
 cdef class AudioChannel:
+
     # The channel for FFmpeg.
     cdef uint64_t channel
 

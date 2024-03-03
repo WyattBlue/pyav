@@ -21,34 +21,17 @@ cdef class VideoPlane(Plane):
 
         # Sometimes, linesize is negative (and that is meaningful). We are only
         # insisting that the buffer size be based on the extent of linesize, and
-        # ignore its direction.
+        # ignore it's direction.
         self.buffer_size = abs(self.frame.ptr.linesize[self.index]) * self.height
 
     cdef size_t _buffer_size(self):
         return self.buffer_size
 
-    property line_size:
+    @property
+    def line_size(self):
         """
         Bytes per horizontal line in this plane.
 
         :type: int
         """
-        def __get__(self):
-            return self.frame.ptr.linesize[self.index]
-
-
-cdef class YUVPlanes(VideoPlane):
-    def __cinit__(self, VideoFrame frame, int index):
-        if index != 0:
-            raise RuntimeError("YUVPlanes only supports index 0")
-        if frame.format.name not in ("yuvj420p", "yuv420p"):
-            raise RuntimeError("YUVPlane only supports yuv420p and yuvj420p")
-        if frame.ptr.linesize[0] < 0:
-            raise RuntimeError("YUVPlane only supports positive linesize")
-        self.width = frame.width
-        self.height = frame.height * 3 // 2
-        self.buffer_size = self.height *  abs(self.frame.ptr.linesize[0])
-        self.frame = frame
-
-    cdef void* _buffer_ptr(self):
-        return self.frame.ptr.extended_data[self.index]
+        return self.frame.ptr.linesize[self.index]

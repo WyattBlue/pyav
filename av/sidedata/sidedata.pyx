@@ -25,13 +25,11 @@ Type = define_enum("Type", __name__, (
     ("SPHERICAL", lib.AV_FRAME_DATA_SPHERICAL),
     ("CONTENT_LIGHT_LEVEL", lib.AV_FRAME_DATA_CONTENT_LIGHT_LEVEL),
     ("ICC_PROFILE", lib.AV_FRAME_DATA_ICC_PROFILE),
-    # SEI_UNREGISTERED available since version 56.54.100 of libavutil (FFmpeg >= 4.4)
     ("SEI_UNREGISTERED", lib.AV_FRAME_DATA_SEI_UNREGISTERED) if lib.AV_FRAME_DATA_SEI_UNREGISTERED != -1 else None,
 ))
 
 
 cdef SideData wrap_side_data(Frame frame, int index):
-
     cdef lib.AVFrameSideDataType type_ = frame.ptr.side_data[index].type
     if type_ == lib.AV_FRAME_DATA_MOTION_VECTORS:
         return MotionVectors(_cinit_bypass_sentinel, frame, index)
@@ -84,7 +82,6 @@ cdef class _SideDataContainer:
         return iter(self._by_index)
 
     def __getitem__(self, key):
-
         if isinstance(key, int):
             return self._by_index[key]
 
