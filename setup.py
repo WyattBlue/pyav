@@ -194,6 +194,7 @@ setup(
     license="BSD",
     project_urls = {
         "Bug Reports": "https://github.com/WyattBlue/pyav/issues",
+        "Documentation": "https://pyav.basswood-io.com",
         "Download": "https://pypi.org/project/pyav",
     },
     author="WyattBlue",
