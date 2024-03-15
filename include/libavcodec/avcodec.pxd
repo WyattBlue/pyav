@@ -90,6 +90,9 @@ cdef extern from "libavcodec/avcodec.h" nogil:
     cdef enum:
         AV_PKT_FLAG_KEY
         AV_PKT_FLAG_CORRUPT
+        AV_PKT_FLAG_DISCARD
+        AV_PKT_FLAG_TRUSTED
+        AV_PKT_FLAG_DISPOSABLE
 
     cdef enum:
         AV_FRAME_FLAG_CORRUPT
@@ -167,6 +170,8 @@ cdef extern from "libavcodec/avcodec.h" nogil:
 
         int bit_rate_tolerance
         int mb_decision
+
+        int bits_per_coded_sample
 
         int global_quality
         int compression_level

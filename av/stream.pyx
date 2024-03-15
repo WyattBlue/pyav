@@ -146,25 +146,6 @@ cdef class Stream:
         # Lets just copy what we want.
         err_check(lib.avcodec_parameters_from_context(self.ptr.codecpar, self.codec_context.ptr))
 
-    def encode(self, frame=None):
-        """
-        Encode an :class:`.AudioFrame` or :class:`.VideoFrame` and return a list
-        of :class:`.Packet`.
-
-        :return: :class:`list` of :class:`.Packet`.
-
-        .. seealso:: This is mostly a passthrough to :meth:`.CodecContext.encode`.
-        """
-        if self.codec_context is None:
-            raise RuntimeError("Stream.encode requires a valid CodecContext")
-
-        packets = self.codec_context.encode(frame)
-        cdef Packet packet
-        for packet in packets:
-            packet._stream = self
-            packet.ptr.stream_index = self.ptr.index
-        return packets
-
     cdef _get_side_data(self, lib.AVStream *stream):
         # Get DISPLAYMATRIX SideData from a lib.AVStream object.
         # Returns: tuple[int, dict[str, Any]]
@@ -235,48 +216,6 @@ cdef class Stream:
         Setter used by __setattr__ for the time_base property.
         """
         to_avrational(value, &self.ptr.time_base)
-
-    @property
-    def average_rate(self):
-        """
-        The average frame rate of this video stream.
-
-        This is calculated when the file is opened by looking at the first
-        few frames and averaging their rate.
-
-        :type: :class:`~fractions.Fraction` or ``None``
-
-
-        """
-        return avrational_to_fraction(&self.ptr.avg_frame_rate)
-
-    @property
-    def base_rate(self):
-        """
-        The base frame rate of this stream.
-
-        This is calculated as the lowest framerate at which the timestamps of
-        frames can be represented accurately. See :ffmpeg:`AVStream.r_frame_rate`
-        for more.
-
-        :type: :class:`~fractions.Fraction` or ``None``
-
-        """
-        return avrational_to_fraction(&self.ptr.r_frame_rate)
-
-    @property
-    def guessed_rate(self):
-        """The guessed frame rate of this stream.
-
-        This is a wrapper around :ffmpeg:`av_guess_frame_rate`, and uses multiple
-        heuristics to decide what is "the" frame rate.
-
-        :type: :class:`~fractions.Fraction` or ``None``
-
-        """
-        # The two NULL arguments aren't used in FFmpeg >= 4.0
-        cdef lib.AVRational val = lib.av_guess_frame_rate(NULL, self.ptr, NULL)
-        return avrational_to_fraction(&val)
 
     @property
     def start_time(self):
