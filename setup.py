@@ -179,7 +179,9 @@ with open(about_file, encoding="utf-8") as fp:
     exec(fp.read(), about)
 
 package_folders = pathlib.Path("av").glob("**/")
-package_data = {".".join(pckg.parts): ["*.pxd", "*.pyi", "*.typed"] for pckg in package_folders}
+package_data = {
+    ".".join(pckg.parts): ["*.pxd", "*.pyi", "*.typed"] for pckg in package_folders
+}
 
 
 with open("README.md") as f:
@@ -192,7 +194,7 @@ setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     license="BSD",
-    project_urls = {
+    project_urls={
         "Bug Reports": "https://github.com/WyattBlue/pyav/issues",
         "Documentation": "https://pyav.basswood-io.com",
         "Download": "https://pypi.org/project/pyav",
