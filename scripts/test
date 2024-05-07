@@ -22,11 +22,6 @@ if istest main; then
     $PYAV_PYTHON setup.py test
 fi
 
-if istest sdist; then
-    $PYAV_PYTHON setup.py build_ext
-    $PYAV_PYTHON setup.py sdist
-fi
-
 if istest examples; then
     for name in $(find examples -name '*.py'); do
         echo

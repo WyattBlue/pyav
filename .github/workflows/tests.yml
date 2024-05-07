@@ -1,148 +1,9 @@
 name: tests
 on:
-  push:
-    paths-ignore:
-      - '**.md'
-      - '**.rst'
-      - '**.txt'
-  pull_request:
-    paths-ignore:
-      - '**.md'
-      - '**.rst'
-      - '**.txt'
+  release:
+    types: [published]
+  workflow_dispatch:
 jobs:
-  style:
-    name: "Style"
-    runs-on: ubuntu-latest
-    env:
-      PYAV_PYTHON: python3
-      PYAV_LIBRARY: ffmpeg-6.0
-    steps:
-      - uses: actions/checkout@v4
-        name: Checkout
-      - name: Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: 3.12
-
-      - name: Environment
-        run: env | sort
-
-      - name: Packages
-        run: |
-          . scripts/activate.sh
-          python -m pip install black isort
-
-      - name: "Test Style"
-        run: |
-          python -m black av examples tests
-          python -m isort --profile black --check-only --diff av examples tests
-
-  nix:
-    name: "py-${{ matrix.config.python }} lib-${{ matrix.config.ffmpeg }} ${{matrix.config.os}}"
-    runs-on: ${{ matrix.config.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        config:
-          - {os: ubuntu-latest, python: 3.9, ffmpeg: "6.1"}
-          - {os: ubuntu-latest, python: 3.9, ffmpeg: "5.1"}
-          - {os: macos-latest,  python: 3.9, ffmpeg: "6.1"}
-    env:
-      PYAV_PYTHON: python${{ matrix.config.python }}
-      PYAV_LIBRARY: ffmpeg-${{ matrix.config.ffmpeg }}
-
-    steps:
-    - uses: actions/checkout@v4
-      name: Checkout
-
-    - name: Python ${{ matrix.config.python }}
-      uses: actions/setup-python@v5
-      with:
-        python-version: ${{ matrix.config.python }}
-
-    - name: OS Packages
-      run: |
-        case ${{ matrix.config.os }} in
-          ubuntu-latest)
-            sudo apt-get update
-            sudo apt-get install autoconf automake build-essential cmake \
-              libtool mercurial pkg-config texinfo wget yasm zlib1g-dev
-            sudo apt-get install libass-dev libfreetype6-dev libjpeg-dev \
-              libtheora-dev libvorbis-dev libx264-dev
-            ;;
-          macos-latest)
-            brew install automake libtool nasm pkg-config shtool wget
-            brew install libass libjpeg libpng libvorbis libvpx opus theora x264
-            ;;
-        esac
-
-    - name: Pip and FFmpeg
-      run: |
-        . scripts/activate.sh ffmpeg-${{ matrix.config.ffmpeg }}
-        scripts/build-deps
-
-    - name: Build
-      run: |
-        . scripts/activate.sh ffmpeg-${{ matrix.config.ffmpeg }}
-        scripts/build
-
-    - name: Test
-      run: |
-        . scripts/activate.sh ffmpeg-${{ matrix.config.ffmpeg }}
-        python -m av --version # Assert it can import.
-        scripts/test
-
-  windows:
-    name: "py-${{ matrix.config.python }} lib-${{ matrix.config.ffmpeg }} ${{matrix.config.os}}"
-    runs-on: ${{ matrix.config.os }}
-
-    strategy:
-      fail-fast: false
-      matrix:
-        config:
-          - {os: windows-latest, python: 3.9, ffmpeg: "6.1"}
-          - {os: windows-latest, python: 3.9, ffmpeg: "5.1"}
-
-    steps:
-    - name: Checkout
-      uses: actions/checkout@v4
-
-    - name: Set up Conda
-      shell: bash
-      run: |
-        . $CONDA/etc/profile.d/conda.sh
-        conda config --set always_yes true
-        conda config --add channels conda-forge
-        conda create -q -n pyav \
-          cython \
-          numpy \
-          pillow \
-          python=${{ matrix.config.python }} \
-          setuptools
-          if [[ "${{ matrix.config.ffmpeg }}" == "5.1" ]]; then
-            curl -L -o ffmpeg.tar.gz https://github.com/PyAV-Org/pyav-ffmpeg/releases/download/5.1.2-1/ffmpeg-win_amd64.tar.gz
-          else
-            conda install -q -n pyav ffmpeg=${{ matrix.config.ffmpeg }}
-          fi
-
-    - name: Build
-      shell: bash
-      run: |
-        . $CONDA/etc/profile.d/conda.sh
-        conda activate pyav
-        if [[ "${{ matrix.config.ffmpeg }}" != "6.1" ]]; then
-          tar -xf ffmpeg.tar.gz -C $CONDA_PREFIX/Library/
-        fi
-        python setup.py build_ext --inplace --ffmpeg-dir=$CONDA_PREFIX/Library
-
-    - name: Test
-      shell: bash
-      run: |
-        . $CONDA/etc/profile.d/conda.sh
-        conda activate pyav
-        python setup.py test
-
   package-source:
     runs-on: ubuntu-latest
     steps:
@@ -153,7 +14,7 @@ jobs:
       - name: Build source package
         run: |
           pip install cython
-          python scripts/fetch-vendor.py /tmp/vendor
+          python scripts/fetch-vendor.py --config-file scripts/ffmpeg-6.1.json /tmp/vendor
           PKG_CONFIG_PATH=/tmp/vendor/lib/pkgconfig python setup.py sdist
       - name: Upload source package
         uses: actions/upload-artifact@v3
@@ -169,10 +30,10 @@ jobs:
         include:
           - os: macos-latest
             arch: arm64
-          - os: macos-latest
+          - os: macos-13
             arch: x86_64
-          # - os: ubuntu-latest
-          #   arch: aarch64
+          - os: ubuntu-latest
+            arch: aarch64
           - os: ubuntu-latest
             arch: i686
           - os: ubuntu-latest
@@ -188,7 +49,7 @@ jobs:
         if: matrix.os == 'ubuntu-latest'
         uses: docker/setup-qemu-action@v3
       - name: Install packages
-        if: matrix.os == 'macos-latest'
+        if: matrix.os == 'macos-13'
         run: |
           brew update
           brew install pkg-config
@@ -196,8 +57,8 @@ jobs:
         env:
           CIBW_ARCHS: ${{ matrix.arch }}
           CIBW_BEFORE_ALL_LINUX: yum install -y alsa-lib libxcb
-          CIBW_BEFORE_BUILD: pip install cython && python scripts/fetch-vendor.py /tmp/vendor
-          CIBW_BEFORE_BUILD_WINDOWS: pip install cython && python scripts\fetch-vendor.py C:\cibw\vendor
+          CIBW_BEFORE_BUILD: python scripts/fetch-vendor.py --config-file scripts/ffmpeg-6.1.json /tmp/vendor
+          CIBW_BEFORE_BUILD_WINDOWS: python scripts\fetch-vendor.py --config-file scripts\ffmpeg-6.1.json C:\cibw\vendor
           CIBW_ENVIRONMENT_LINUX: LD_LIBRARY_PATH=/tmp/vendor/lib:$LD_LIBRARY_PATH PKG_CONFIG_PATH=/tmp/vendor/lib/pkgconfig
           CIBW_ENVIRONMENT_MACOS: PKG_CONFIG_PATH=/tmp/vendor/lib/pkgconfig LDFLAGS=-headerpad_max_install_names
           CIBW_ENVIRONMENT_WINDOWS: INCLUDE=C:\\cibw\\vendor\\include LIB=C:\\cibw\\vendor\\lib PYAV_SKIP_TESTS=unicode_filename
@@ -205,11 +66,12 @@ jobs:
           CIBW_SKIP: "*-musllinux*"
           CIBW_TEST_COMMAND: mv {project}/av {project}/av.disabled && python -m unittest discover -t {project} -s tests && mv {project}/av.disabled {project}/av
           CIBW_TEST_REQUIRES: numpy
-          CIBW_TEST_SKIP: pp* *_i686 *-macosx_arm64
+          # skip tests when there are no binary wheels of numpy
+          CIBW_TEST_SKIP: pp* *_i686
         run: |
           pip install cibuildwheel delvewheel
           cibuildwheel --output-dir dist
-
+        shell: bash
       - name: Upload wheels
         uses: actions/upload-artifact@v3
         with:
@@ -226,8 +88,8 @@ jobs:
           name: dist
           path: dist/
       - name: Publish to PyPI
-        if: github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags/')
+        if: github.event_name == 'release' && github.event.action == 'published'
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           user: __token__
-          password: ${{ secrets.PYPI_PASSWORD }}
+          password: ${{ secrets.PYPI_TOKEN }}

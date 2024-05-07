@@ -11,9 +11,6 @@
 /venv
 /venvs
 
-# IDE
-/.idea
-
 # Build products
 *.dll
 *.egg-info
@@ -29,11 +26,15 @@
 /av/**/*.pyd
 /build
 /dist
+/docs/_build
 /ipch
 /msvc-projects
 /src
+/docs/_ffmpeg
 
 # Testing.
+*.spyderproject
+.idea
 /sandbox
 /tests/assets
 /tests/samples
