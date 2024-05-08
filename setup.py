@@ -207,7 +207,7 @@ setup(
     zip_safe=False,
     ext_modules=ext_modules,
     test_suite="tests",
-    python_requires=">=3.9",
+    python_requires=">=3.10",
     classifiers=[
         "Topic :: Multimedia :: Sound/Audio",
         "Topic :: Multimedia :: Sound/Audio :: Conversion",
