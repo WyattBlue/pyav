@@ -11,7 +11,6 @@ from Cython.Build import cythonize
 from Cython.Compiler.AutoDocTransforms import EmbedSignature
 from setuptools import Extension, find_packages, setup
 
-
 FFMPEG_LIBRARIES = [
     "avformat",
     "avcodec",
@@ -72,21 +71,22 @@ def get_config_from_pkg_config():
     """
     Get distutils-compatible extension arguments using pkg-config.
     """
+    pkg_config = os.environ.get("PKG_CONFIG", "pkg-config")
     try:
         raw_cflags = subprocess.check_output(
-            ["pkg-config", "--cflags", "--libs"]
+            [pkg_config, "--cflags", "--libs"]
             + ["lib" + name for name in FFMPEG_LIBRARIES]
         )
     except FileNotFoundError:
-        print("pkg-config is required for building PyAV")
+        print(f"{pkg_config} is required for building PyAV")
         exit(1)
     except subprocess.CalledProcessError:
-        print(f"pkg-config could not find libraries {FFMPEG_LIBRARIES}")
+        print(f"{pkg_config} could not find libraries {FFMPEG_LIBRARIES}")
         exit(1)
 
     known, unknown = parse_cflags(raw_cflags.decode("utf-8"))
     if unknown:
-        print(f"pkg-config returned flags we don't understand: {unknown}")
+        print("pkg-config returned flags we don't understand: {}".format(unknown))
         if "-pthread" in unknown:
             print("Building PyAV against static FFmpeg libraries is not supported.")
         exit(1)
@@ -109,7 +109,7 @@ def parse_cflags(raw_flags):
         parts = x.split("=", 1)
         value = x[1] or None if len(x) == 2 else None
         config["define_macros"][i] = (parts[0], value)
-    return config, shlex.join(unknown)
+    return config, " ".join(shlex.quote(x) for x in unknown)
 
 
 # Parse command-line arguments.
@@ -195,7 +195,7 @@ setup(
     long_description_content_type="text/markdown",
     license="BSD",
     project_urls={
-        "Bug Reports": "https://github.com/WyattBlue/pyav/issues",
+        "Bug Reports": "https://github.com/PyAV-Org/PyAV/issues",
         "Documentation": "https://pyav.basswood-io.com",
         "Download": "https://pypi.org/project/pyav",
     },
@@ -204,31 +204,30 @@ setup(
     url="https://github.com/WyattBlue/pyav",
     packages=find_packages(exclude=["build*", "examples*", "scratchpad*", "tests*"]),
     package_data=package_data,
+    python_requires=">=3.10",
     zip_safe=False,
     ext_modules=ext_modules,
     test_suite="tests",
-    python_requires=">=3.10",
+    entry_points={
+        "console_scripts": ["pyav = av.__main__:main"],
+    },
     classifiers=[
-        "Topic :: Multimedia :: Sound/Audio",
-        "Topic :: Multimedia :: Sound/Audio :: Conversion",
-        "Topic :: Multimedia :: Video",
-        "Topic :: Multimedia :: Video :: Conversion",
-        "Topic :: Software Development :: Libraries :: Python Modules",
+        "Development Status :: 5 - Production/Stable",
+        "Intended Audience :: Developers",
         "License :: OSI Approved :: BSD License",
         "Natural Language :: English",
-        "Intended Audience :: Developers",
-        "Development Status :: 5 - Production/Stable",
         "Operating System :: MacOS :: MacOS X",
         "Operating System :: POSIX",
         "Operating System :: Unix",
         "Operating System :: Microsoft :: Windows",
         "Programming Language :: Cython",
-        "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
         "Programming Language :: Python :: 3.12",
+        "Topic :: Software Development :: Libraries :: Python Modules",
+        "Topic :: Multimedia :: Sound/Audio",
+        "Topic :: Multimedia :: Sound/Audio :: Conversion",
+        "Topic :: Multimedia :: Video",
+        "Topic :: Multimedia :: Video :: Conversion",
     ],
-    entry_points={
-        "console_scripts": ["pyav = av.__main__:main"],
-    },
 )
