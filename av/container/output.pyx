@@ -1,6 +1,8 @@
 import logging
 import os
 
+cimport libav as lib
+
 from av.codec.codec cimport Codec
 from av.codec.context cimport CodecContext, wrap_codec_context
 from av.container.streams cimport StreamContainer
@@ -191,6 +193,47 @@ cdef class OutputContainer(Container):
             log.warning("Some options were not used: %s" % unused_options)
 
         self._started = True
+
+    @property
+    def supported_codecs(self):
+        """
+        Returns a set of all codecs this format supports.
+        """
+        result = set()
+        cdef const lib.AVCodec *codec = NULL
+        cdef void *opaque = NULL
+
+        while True:
+            codec = lib.av_codec_iterate(&opaque)
+            if codec == NULL:
+                break
+
+            if lib.avformat_query_codec(self.ptr.oformat, codec.id, lib.FF_COMPLIANCE_NORMAL) == 1:
+                result.add(codec.name)
+
+        return result
+
+
+    @property
+    def default_video_codec(self):
+        """
+        Returns the default video codec this container recommends.
+        """
+        return lib.avcodec_get_name(self.format.optr.video_codec)
+
+    @property
+    def default_audio_codec(self):
+        """
+        Returns the default audio codec this container recommends.
+        """
+        return lib.avcodec_get_name(self.format.optr.audio_codec)
+
+    @property
+    def default_subtitle_codec(self):
+        """
+        Returns the default subtitle codec this container recommends.
+        """
+        return lib.avcodec_get_name(self.format.optr.subtitle_codec)
 
     def close(self):
         for stream in self.streams:
