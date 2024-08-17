@@ -1,8 +1,10 @@
 LDFLAGS ?= ""
-CFLAGS ?= "-O0"
+CFLAGS ?= "-O0 -Wno-incompatible-function-pointer-types"
 
 PYAV_PYTHON ?= python
+PYAV_PIP ?= pip
 PYTHON := $(PYAV_PYTHON)
+PIP := $(PYAV_PIP)
 
 
 .PHONY: default build clean fate-suite lint test
@@ -11,6 +13,7 @@ default: build
 
 
 build:
+	$(PIP) install --upgrade cython
 	CFLAGS=$(CFLAGS) LDFLAGS=$(LDFLAGS) $(PYTHON) setup.py build_ext --inplace --debug
 
 clean:
@@ -25,10 +28,12 @@ fate-suite:
 	rsync -vrltLW rsync://fate-suite.ffmpeg.org/fate-suite/ tests/assets/fate-suite/
 
 lint:
+	$(PIP) install -U black isort flake8 flake8-pyproject pillow numpy mypy==1.10.0
 	black --check av examples tests setup.py
 	flake8 av examples tests
 	isort --check-only --diff av examples tests
 	mypy av tests
 
 test:
-	$(PYTHON) setup.py test
+	$(PIP) install --upgrade cython numpy pillow pytest
+	$(PYTHON) -m pytest

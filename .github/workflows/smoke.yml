@@ -24,9 +24,6 @@ jobs:
         with:
           python-version: 3.12
 
-      - name: Packages
-        run: pip install -r tests/requirements.txt
-
       - name: Linters
         run: make lint
 
@@ -37,10 +34,9 @@ jobs:
       fail-fast: false
       matrix:
         config:
-          - {os: ubuntu-latest, python: "3.10", ffmpeg: "6.1", extras: true}
-          - {os: ubuntu-latest, python: "3.9", ffmpeg: "6.0"}
-          - {os: ubuntu-latest, python: pypy3.9, ffmpeg: "6.0"}
-          - {os: macos-12,  python: "3.10", ffmpeg: "6.1"}
+          - {os: ubuntu-latest, python: "3.9", ffmpeg: "7.0.2", extras: true}
+          - {os: ubuntu-latest, python: pypy3.9, ffmpeg: "7.0.2"}
+          - {os: macos-12,  python: "3.9", ffmpeg: "7.0.2"}
 
     env:
       PYAV_PYTHON: python${{ matrix.config.python }}
@@ -62,7 +58,7 @@ jobs:
             sudo apt-get update
             sudo apt-get install autoconf automake build-essential cmake \
               libtool mercurial pkg-config texinfo wget yasm zlib1g-dev
-            sudo apt-get install libass-dev libfreetype6-dev libjpeg-dev \
+            sudo apt-get install libfreetype6-dev libjpeg-dev \
               libtheora-dev libvorbis-dev libx264-dev
             if [[ "${{ matrix.config.extras }}" ]]; then
               sudo apt-get install doxygen
@@ -70,7 +66,7 @@ jobs:
             ;;
           macos-12)
             brew install automake libtool nasm pkg-config shtool texi2html wget
-            brew install libass libjpeg libpng libvorbis libvpx opus theora x264
+            brew install libjpeg libpng libvorbis libvpx opus theora x264
             ;;
         esac
 
@@ -88,7 +84,19 @@ jobs:
       run: |
         . scripts/activate.sh ffmpeg-${{ matrix.config.ffmpeg }}
         python -m av --version # Assert it can import.
-        scripts/test
+        make test
+
+    - name: Docs
+      if: matrix.config.extras
+      run: |
+        . scripts/activate.sh ffmpeg-${{ matrix.config.ffmpeg }}
+        make -C docs html
+
+    - name: Doctest
+      if: matrix.config.extras
+      run: |
+        . scripts/activate.sh ffmpeg-${{ matrix.config.ffmpeg }}
+        make -C docs test
 
     - name: Examples
       if: matrix.config.extras
@@ -104,7 +112,7 @@ jobs:
       fail-fast: false
       matrix:
         config:
-          - {os: windows-latest, python: "3.10", ffmpeg: "6.1"}
+          - {os: windows-latest, python: "3.10", ffmpeg: "7.0"}
 
     steps:
     - name: Checkout
@@ -120,6 +128,7 @@ jobs:
           cython \
           numpy \
           pillow \
+          pytest \
           python=${{ matrix.config.python }} \
           setuptools
 
@@ -136,4 +145,4 @@ jobs:
       run: |
         . $CONDA/etc/profile.d/conda.sh
         conda activate pyav
-        python setup.py test
+        python -m pytest

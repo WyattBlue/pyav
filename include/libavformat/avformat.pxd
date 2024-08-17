@@ -28,7 +28,6 @@ cdef extern from "libavformat/avformat.h" nogil:
         AVMEDIA_TYPE_NB
 
     cdef struct AVStream:
-
         int index
         int id
 
@@ -164,6 +163,15 @@ cdef extern from "libavformat/avformat.h" nogil:
         unsigned int max_probe_size
     )
 
+    cdef int av_find_best_stream(
+        AVFormatContext *ic,
+        AVMediaType type,
+        int wanted_stream_nb,
+        int related_stream,
+        AVCodec **decoder_ret,
+        int flags
+    ) 
+
     cdef AVInputFormat* av_find_input_format(const char *name)
 
     # http://ffmpeg.org/doxygen/trunk/structAVFormatContext.html
@@ -198,7 +206,7 @@ cdef extern from "libavformat/avformat.h" nogil:
             int flags,
             AVDictionary **options
         )
-        void (*io_close)(
+        int (*io_close2)(
             AVFormatContext *s,
             AVIOContext *pb
         )

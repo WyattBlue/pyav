@@ -69,12 +69,15 @@ class TestAudioResampler(TestCase):
         self.assertEqual(len(oframes), 0)
 
     def test_pts_assertion_same_rate(self):
+        import av
+
+        av.logging.set_level(av.logging.VERBOSE)
         resampler = AudioResampler("s16", "mono")
 
         # resample one frame
         iframe = AudioFrame("s16", "stereo", 1024)
         iframe.sample_rate = 48000
-        iframe.time_base = "1/48000"
+        iframe.time_base = Fraction(1, 48000)
         iframe.pts = 0
 
         oframes = resampler.resample(iframe)
@@ -112,6 +115,7 @@ class TestAudioResampler(TestCase):
         # flush
         oframes = resampler.resample(None)
         self.assertEqual(len(oframes), 0)
+        av.logging.set_level(None)
 
     def test_pts_assertion_new_rate_up(self):
         resampler = AudioResampler("s16", "mono", 44100)

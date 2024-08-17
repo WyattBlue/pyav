@@ -202,12 +202,11 @@ setup(
     author="WyattBlue",
     author_email="wyattblue@auto-editor.com",
     url="https://github.com/WyattBlue/pyav",
-    packages=find_packages(exclude=["build*", "examples*", "scratchpad*", "tests*"]),
+    packages=find_packages(exclude=["build*", "examples*", "tests*", "include*"]),
     package_data=package_data,
     python_requires=">=3.10",
     zip_safe=False,
     ext_modules=ext_modules,
-    test_suite="tests",
     entry_points={
         "console_scripts": ["pyav = av.__main__:main"],
     },

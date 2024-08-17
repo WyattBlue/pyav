@@ -1,5 +1,6 @@
-from typing import Iterator, overload
+from typing import Iterator, Literal, overload
 
+from av.attachments.stream import AttachmentStream
 from av.audio.stream import AudioStream
 from av.data.stream import DataStream
 from av.stream import Stream
@@ -10,6 +11,7 @@ class StreamContainer:
     video: tuple[VideoStream, ...]
     audio: tuple[AudioStream, ...]
     subtitles: tuple[SubtitleStream, ...]
+    attachments: tuple[AttachmentStream, ...]
     data: tuple[DataStream, ...]
     other: tuple[Stream, ...]
 
@@ -28,3 +30,9 @@ class StreamContainer:
         *args: int | Stream | dict[str, int | tuple[int, ...]],
         **kwargs: int | tuple[int, ...],
     ) -> list[Stream]: ...
+    def best(
+        self,
+        type: Literal["video", "audio", "subtitle", "data", "attachment"],
+        /,
+        related: Stream | None = None,
+    ) -> Stream | None: ...

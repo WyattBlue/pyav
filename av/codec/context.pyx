@@ -1,5 +1,3 @@
-import warnings
-
 cimport libav as lib
 from libc.errno cimport EAGAIN
 from libc.stdint cimport uint8_t
@@ -504,19 +502,13 @@ cdef class CodecContext:
     @property
     def time_base(self):
         if self.is_decoder:
-            warnings.warn(
-                "Using CodecContext.time_base for decoders is deprecated.",
-                AVDeprecationWarning
-            )
+            raise RuntimeError("Cannot access 'time_base' as a decoder")
         return avrational_to_fraction(&self.ptr.time_base)
 
     @time_base.setter
     def time_base(self, value):
         if self.is_decoder:
-            warnings.warn(
-                "Using CodecContext.time_base for decoders is deprecated.",
-                AVDeprecationWarning
-            )
+            raise RuntimeError("Cannot access 'time_base' as a decoder")
         to_avrational(value, &self.ptr.time_base)
 
     @property
@@ -531,10 +523,6 @@ cdef class CodecContext:
                                                 byteorder="little", signed=False)
         else:
             raise ValueError("Codec tag should be a 4 character string.")
-
-    @property
-    def ticks_per_frame(self):
-        return self.ptr.ticks_per_frame
 
     @property
     def bit_rate(self):

@@ -7,13 +7,9 @@ fi
 
 cd "$PYAV_ROOT"
 
-# Always try to install the Python dependencies they are cheap.
-$PYAV_PIP install --upgrade -r tests/requirements.txt
-
-
 # Skip the rest of the build if it already exists.
 if [[ -e "$PYAV_LIBRARY_PREFIX/bin/ffmpeg" ]]; then
-    echo "We have a cached build of $PYAV_LIBRARY; skipping re-build."
+    echo "We have a cached build of ffmpeg-$PYAV_LIBRARY; skipping re-build."
     exit 0
 fi
 
@@ -37,15 +33,17 @@ cd $PYAV_LIBRARY
 echo ./configure
 ./configure \
     --disable-doc \
-    --disable-mmx \
-    --disable-optimizations \
     --disable-static \
     --disable-stripping \
     --enable-debug=3 \
     --enable-gpl \
+    --enable-version3 \
     --enable-libx264 \
     --enable-libxml2 \
     --enable-shared \
+    --enable-sse \
+    --enable-avx \
+    --enable-avx2 \
     --prefix="$PYAV_LIBRARY_PREFIX" \
     || exit 2
 echo
