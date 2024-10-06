@@ -1,227 +1,223 @@
 import pickle
 
+import pytest
+
 from av.enum import EnumType, define_enum
 
-from .common import TestCase
-
-# This must be at the top-level.
 PickleableFooBar = define_enum("PickleableFooBar", __name__, [("FOO", 1)])
 
 
-class TestEnums(TestCase):
-    def define_foobar(self, **kwargs):
-        return define_enum("Foobar", __name__, (("FOO", 1), ("BAR", 2)), **kwargs)
+def define_foobar(is_flags: bool = False):
+    return define_enum("Foobar", __name__, (("FOO", 1), ("BAR", 2)), is_flags=is_flags)
 
-    def test_basics(self):
-        cls = self.define_foobar()
 
-        self.assertIsInstance(cls, EnumType)
+def test_basics():
+    cls = define_foobar()
 
-        foo = cls.FOO
+    assert isinstance(cls, EnumType)
 
-        self.assertIsInstance(foo, cls)
-        self.assertEqual(foo.name, "FOO")
-        self.assertEqual(foo.value, 1)
+    foo = cls.FOO
 
-        self.assertNotIsInstance(foo, PickleableFooBar)
+    assert isinstance(foo, cls)
+    assert foo.name == "FOO" and foo.value == 1
+    assert not isinstance(foo, PickleableFooBar)
 
-    def test_access(self):
-        cls = self.define_foobar()
-        foo1 = cls.FOO
-        foo2 = cls["FOO"]
-        foo3 = cls[1]
-        foo4 = cls[foo1]
-        self.assertIs(foo1, foo2)
-        self.assertIs(foo1, foo3)
-        self.assertIs(foo1, foo4)
 
-        self.assertIn(foo1, cls)
-        self.assertIn("FOO", cls)
-        self.assertIn(1, cls)
+def test_access():
+    cls = define_foobar()
+    foo1 = cls.FOO
+    foo2 = cls["FOO"]
+    foo3 = cls[1]
+    foo4 = cls[foo1]
+    assert foo1 is foo2
+    assert foo1 is foo3
+    assert foo1 is foo4
 
-        self.assertRaises(KeyError, lambda: cls["not a foo"])
-        self.assertRaises(KeyError, lambda: cls[10])
-        self.assertRaises(TypeError, lambda: cls[()])
+    assert foo1 in cls and "FOO" in cls and 1 in cls
 
-        self.assertEqual(cls.get("FOO"), foo1)
-        self.assertIs(cls.get("not a foo"), None)
+    pytest.raises(KeyError, lambda: cls["not a foo"])
+    pytest.raises(KeyError, lambda: cls[10])
+    pytest.raises(TypeError, lambda: cls[()])
 
-    def test_casting(self):
-        cls = self.define_foobar()
-        foo = cls.FOO
+    assert cls.get("FOO") == foo1
+    assert cls.get("not a foo") is None
 
-        self.assertEqual(repr(foo), "<tests.test_enums.Foobar:FOO(0x1)>")
 
-        str_foo = str(foo)
-        self.assertIsInstance(str_foo, str)
-        self.assertEqual(str_foo, "FOO")
+def test_casting():
+    cls = define_foobar()
+    foo = cls.FOO
 
-        int_foo = int(foo)
-        self.assertIsInstance(int_foo, int)
-        self.assertEqual(int_foo, 1)
+    assert repr(foo) == "<tests.test_enums.Foobar:FOO(0x1)>"
 
-    def test_iteration(self):
-        cls = self.define_foobar()
-        self.assertEqual(list(cls), [cls.FOO, cls.BAR])
+    str_foo = str(foo)
+    assert isinstance(str_foo, str) and str_foo == "FOO"
 
-    def test_equality(self):
-        cls = self.define_foobar()
-        foo = cls.FOO
-        bar = cls.BAR
+    int_foo = int(foo)
+    assert isinstance(int_foo, int) and int_foo == 1
 
-        self.assertEqual(foo, "FOO")
-        self.assertEqual(foo, 1)
-        self.assertEqual(foo, foo)
-        self.assertNotEqual(foo, "BAR")
-        self.assertNotEqual(foo, 2)
-        self.assertNotEqual(foo, bar)
 
-        self.assertRaises(ValueError, lambda: foo == "not a foo")
-        self.assertRaises(ValueError, lambda: foo == 10)
-        self.assertRaises(TypeError, lambda: foo == ())
+def test_iteration():
+    cls = define_foobar()
+    assert list(cls) == [cls.FOO, cls.BAR]
 
-    def test_as_key(self):
-        cls = self.define_foobar()
-        foo = cls.FOO
 
-        d = {foo: "value"}
-        self.assertEqual(d[foo], "value")
-        self.assertIs(d.get("FOO"), None)
-        self.assertIs(d.get(1), None)
+def test_equality():
+    cls = define_foobar()
+    foo = cls.FOO
+    bar = cls.BAR
 
-    def test_pickleable(self):
-        cls = PickleableFooBar
-        foo = cls.FOO
+    assert foo == "FOO" and foo == 1 and foo == foo
+    assert foo != "BAR" and foo != 2 and foo != bar
 
-        enc = pickle.dumps(foo)
+    pytest.raises(ValueError, lambda: foo == "not a foo")
+    pytest.raises(ValueError, lambda: foo == 10)
+    pytest.raises(TypeError, lambda: foo == ())
 
-        foo2 = pickle.loads(enc)
 
-        self.assertIs(foo, foo2)
+def test_as_key():
+    cls = define_foobar()
+    foo = cls.FOO
 
-    def test_create_unknown(self):
-        cls = self.define_foobar()
-        baz = cls.get(3, create=True)
+    d = {foo: "value"}
+    assert d[foo] == "value"
+    assert d.get("FOO") is None
+    assert d.get(1) is None
 
-        self.assertEqual(baz.name, "FOOBAR_3")
-        self.assertEqual(baz.value, 3)
 
-    def test_multiple_names(self):
-        cls = define_enum(
-            "FFooBBar",
-            __name__,
-            (
-                ("FOO", 1),
-                ("F", 1),
-                ("BAR", 2),
-                ("B", 2),
-            ),
-        )
+def test_pickleable():
+    cls = PickleableFooBar
+    foo = cls.FOO
 
-        self.assertIs(cls.F, cls.FOO)
+    enc = pickle.dumps(foo)
 
-        self.assertEqual(cls.F.name, "FOO")
-        self.assertNotEqual(cls.F.name, "F")  # This is actually the string.
+    foo2 = pickle.loads(enc)
 
-        self.assertEqual(cls.F, "FOO")
-        self.assertEqual(cls.F, "F")
-        self.assertNotEqual(cls.F, "BAR")
-        self.assertNotEqual(cls.F, "B")
-        self.assertRaises(ValueError, lambda: cls.F == "x")
+    assert foo is foo2
 
-    def test_flag_basics(self):
-        cls = define_enum(
-            "FoobarAllFlags",
-            __name__,
-            dict(FOO=1, BAR=2, FOOBAR=3).items(),
-            is_flags=True,
-        )
-        foo = cls.FOO
-        bar = cls.BAR
 
-        foobar = foo | bar
-        self.assertIs(foobar, cls.FOOBAR)
+def test_create_unknown():
+    cls = define_foobar()
+    baz = cls.get(3, create=True)
 
-        foo2 = foobar & foo
-        self.assertIs(foo2, foo)
+    assert baz.name == "FOOBAR_3"
+    assert baz.value == 3
 
-        bar2 = foobar ^ foo
-        self.assertIs(bar2, bar)
 
-        bar3 = foobar & ~foo
-        self.assertIs(bar3, bar)
+def test_multiple_names():
+    cls = define_enum(
+        "FFooBBar",
+        __name__,
+        (("FOO", 1), ("F", 1), ("BAR", 2), ("B", 2)),
+    )
 
-        x = cls.FOO
-        x |= cls.BAR
-        self.assertIs(x, cls.FOOBAR)
+    assert cls.F is cls.FOO
 
-        x = cls.FOOBAR
-        x &= cls.FOO
-        self.assertIs(x, cls.FOO)
+    assert cls.F.name == "FOO"
+    assert cls.F.name != "F"  # This is actually the string.
 
-    def test_multi_flags_basics(self):
-        cls = self.define_foobar(is_flags=True)
+    assert cls.F == "FOO"
+    assert cls.F == "F"
+    assert cls.F != "BAR"
+    assert cls.F != "B"
+    pytest.raises(ValueError, lambda: cls.F == "x")
 
-        foo = cls.FOO
-        bar = cls.BAR
-        foobar = foo | bar
-        self.assertEqual(foobar.name, "FOO|BAR")
-        self.assertEqual(foobar.value, 3)
-        self.assertEqual(foobar.flags, (foo, bar))
 
-        foobar2 = foo | bar
-        foobar3 = cls[3]
-        foobar4 = cls[foobar]
+def test_flag_basics():
+    cls = define_enum(
+        "FoobarAllFlags",
+        __name__,
+        {"FOO": 1, "BAR": 2, "FOOBAR": 3}.items(),
+        is_flags=True,
+    )
+    foo = cls.FOO
+    bar = cls.BAR
 
-        self.assertIs(foobar, foobar2)
-        self.assertIs(foobar, foobar3)
-        self.assertIs(foobar, foobar4)
+    foobar = foo | bar
+    assert foobar is cls.FOOBAR
 
-        self.assertRaises(KeyError, lambda: cls["FOO|BAR"])
+    foo2 = foobar & foo
+    assert foo2 is foo
 
-        self.assertEqual(len(cls), 2)  # It didn't get bigger
-        self.assertEqual(list(cls), [foo, bar])
+    bar2 = foobar ^ foo
+    assert bar2 is bar
 
-    def test_multi_flags_create_missing(self):
-        cls = self.define_foobar(is_flags=True)
+    bar3 = foobar & ~foo
+    assert bar3 is bar
 
-        foobar = cls[3]
-        self.assertIs(foobar, cls.FOO | cls.BAR)
+    x = cls.FOO
+    x |= cls.BAR
+    assert x is cls.FOOBAR
 
-        self.assertRaises(KeyError, lambda: cls[4])  # Not FOO or BAR
-        self.assertRaises(KeyError, lambda: cls[7])  # FOO and BAR and missing flag.
+    x = cls.FOOBAR
+    x &= cls.FOO
+    assert x is cls.FOO
 
-    def test_properties(self):
-        Flags = self.define_foobar(is_flags=True)
-        foobar = Flags.FOO | Flags.BAR
 
-        class Class:
-            def __init__(self, value):
-                self.value = Flags[value].value
+def test_multi_flags_basics():
+    cls = define_foobar(is_flags=True)
 
-            @Flags.property
-            def flags(self):
-                return self.value
+    foo = cls.FOO
+    bar = cls.BAR
+    foobar = foo | bar
+    assert foobar.name == "FOO|BAR"
+    assert foobar.value == 3
+    assert foobar.flags == (foo, bar)
 
-            @flags.setter
-            def flags(self, value):
-                self.value = value
+    foobar2 = foo | bar
+    foobar3 = cls[3]
+    foobar4 = cls[foobar]
 
-            foo = flags.flag_property("FOO")
-            bar = flags.flag_property("BAR")
+    assert foobar is foobar2
+    assert foobar is foobar3
+    assert foobar is foobar4
 
-        obj = Class("FOO")
+    pytest.raises(KeyError, lambda: cls["FOO|BAR"])
 
-        self.assertIs(obj.flags, Flags.FOO)
-        self.assertTrue(obj.foo)
-        self.assertFalse(obj.bar)
+    assert len(cls) == 2  # It didn't get bigger
+    assert list(cls) == [foo, bar]
 
-        obj.bar = True
-        self.assertIs(obj.flags, foobar)
-        self.assertTrue(obj.foo)
-        self.assertTrue(obj.bar)
 
-        obj.foo = False
-        self.assertIs(obj.flags, Flags.BAR)
-        self.assertFalse(obj.foo)
-        self.assertTrue(obj.bar)
+def test_multi_flags_create_missing():
+    cls = define_foobar(is_flags=True)
+
+    foobar = cls[3]
+    assert foobar is cls.FOO | cls.BAR
+
+    pytest.raises(KeyError, lambda: cls[4])  # Not FOO or BAR
+    pytest.raises(KeyError, lambda: cls[7])  # FOO and BAR and missing flag.
+
+
+def test_properties():
+    Flags = define_foobar(is_flags=True)
+    foobar = Flags.FOO | Flags.BAR
+
+    class Class:
+        def __init__(self, value):
+            self.value = Flags[value].value
+
+        @Flags.property
+        def flags(self):
+            return self.value
+
+        @flags.setter
+        def flags(self, value):
+            self.value = value
+
+        foo = flags.flag_property("FOO")
+        bar = flags.flag_property("BAR")
+
+    obj = Class("FOO")
+
+    assert obj.flags is Flags.FOO
+    assert obj.foo
+    assert not obj.bar
+
+    obj.bar = True
+    assert obj.flags is foobar
+    assert obj.foo
+    assert obj.bar
+
+    obj.foo = False
+    assert obj.flags is Flags.BAR
+    assert not obj.foo
+    assert obj.bar

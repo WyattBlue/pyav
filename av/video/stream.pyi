@@ -21,12 +21,13 @@ class VideoStream(Stream):
     format: VideoFormat
     width: int
     height: int
-    bits_per_codec_sample: int
+    bits_per_coded_sample: int
     pix_fmt: str | None
     framerate: Fraction
     rate: Fraction
     gop_size: int
     has_b_frames: bool
+    max_b_frames: int
     coded_width: int
     coded_height: int
     color_range: int

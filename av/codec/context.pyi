@@ -56,10 +56,12 @@ class Flags2(EnumFlag):
 
 class CodecContext:
     extradata: bytes | None
+    extradata_size: int
     is_open: bool
     is_encoder: bool
     is_decoder: bool
     name: str
+    codec: Codec
     options: dict[str, str]
     type: Literal["video", "audio", "data", "subtitle", "attachment"]
     profile: str | None
@@ -71,6 +73,30 @@ class CodecContext:
     thread_count: int
     thread_type: Any
     skip_frame: Any
+
+    # flgas
+    unaligned: bool
+    qscale: bool
+    four_mv: bool
+    output_corrupt: bool
+    qpel: bool
+    drop_changed: bool
+    recon_frame: bool
+    copy_opaque: bool
+    frame_duration: bool
+    pass1: bool
+    pass2: bool
+    loop_filter: bool
+    gray: bool
+    psnr: bool
+    interlaced_dct: bool
+    low_delay: bool
+    global_header: bool
+    bitexact: bool
+    ac_pred: bool
+    interlaced_me: bool
+    closed_gop: bool
+    delay: bool
 
     def open(self, strict: bool = True) -> None: ...
     def close(self, strict: bool = True) -> None: ...
