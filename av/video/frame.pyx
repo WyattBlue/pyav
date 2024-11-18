@@ -1,10 +1,10 @@
 import sys
+from enum import IntEnum
 
 from libc.stdint cimport uint8_t
 
-from av.enum cimport define_enum
 from av.error cimport err_check
-from av.utils cimport check_ndarray, check_ndarray_shape
+from av.utils cimport check_ndarray
 from av.video.format cimport get_pix_fmt, get_video_format
 from av.video.plane cimport VideoPlane
 
@@ -20,18 +20,15 @@ cdef VideoFrame alloc_video_frame():
     """
     return VideoFrame.__new__(VideoFrame, _cinit_bypass_sentinel)
 
-
-PictureType = define_enum("PictureType", __name__, (
-    ("NONE", lib.AV_PICTURE_TYPE_NONE, "Undefined"),
-    ("I", lib.AV_PICTURE_TYPE_I, "Intra"),
-    ("P", lib.AV_PICTURE_TYPE_P, "Predicted"),
-    ("B", lib.AV_PICTURE_TYPE_B, "Bi-directional predicted"),
-    ("S", lib.AV_PICTURE_TYPE_S, "S(GMC)-VOP MPEG-4"),
-    ("SI", lib.AV_PICTURE_TYPE_SI, "Switching intra"),
-    ("SP", lib.AV_PICTURE_TYPE_SP, "Switching predicted"),
-    ("BI", lib.AV_PICTURE_TYPE_BI, "BI type"),
-))
-
+class PictureType(IntEnum):
+    NONE = lib.AV_PICTURE_TYPE_NONE  # Undefined
+    I = lib.AV_PICTURE_TYPE_I  # Intra
+    P = lib.AV_PICTURE_TYPE_P  # Predicted
+    B = lib.AV_PICTURE_TYPE_B  # Bi-directional predicted
+    S = lib.AV_PICTURE_TYPE_S  # S(GMC)-VOP MPEG-4
+    SI = lib.AV_PICTURE_TYPE_SI  # Switching intra
+    SP = lib.AV_PICTURE_TYPE_SP  # Switching predicted
+    BI = lib.AV_PICTURE_TYPE_BI  # BI type
 
 cdef byteswap_array(array, bint big_endian):
     if (sys.byteorder == "big") != big_endian:
@@ -92,6 +89,11 @@ cdef useful_array(VideoPlane plane, unsigned int bytes_per_pixel=1, str dtype="u
     return arr.view(np.dtype(dtype))
 
 
+cdef check_ndarray_shape(object array, bint ok):
+    if not ok:
+        raise ValueError(f"Unexpected numpy array shape `{array.shape}`")
+
+
 cdef class VideoFrame(Frame):
     def __cinit__(self, width=0, height=0, format="yuv420p"):
         if width is _cinit_bypass_sentinel:
@@ -109,18 +111,12 @@ cdef class VideoFrame(Frame):
             self.ptr.height = height
             self.ptr.format = format
 
-            # Allocate the buffer for the video frame.
-            #
             # We enforce aligned buffers, otherwise `sws_scale` can perform
             # poorly or even cause out-of-bounds reads and writes.
             if width and height:
                 res = lib.av_image_alloc(
-                    self.ptr.data,
-                    self.ptr.linesize,
-                    width,
-                    height,
-                    format,
-                    16)
+                    self.ptr.data, self.ptr.linesize, width, height, format, 16
+                )
                 self._buffer = self.ptr.data[0]
 
         if res:
@@ -171,45 +167,30 @@ cdef class VideoFrame(Frame):
         """Width of the image, in pixels."""
         return self.ptr.width
 
-
     @property
     def height(self):
         """Height of the image, in pixels."""
         return self.ptr.height
 
-
-    @property
-    def key_frame(self):
-        """Is this frame a key frame?
-
-        Wraps :ffmpeg:`AVFrame.key_frame`.
-
-        """
-        return self.ptr.key_frame
-
-
     @property
     def interlaced_frame(self):
-        """Is this frame an interlaced or progressive?
+        """Is this frame an interlaced or progressive?"""
 
-        Wraps :ffmpeg:`AVFrame.interlaced_frame`.
-
-        """
-        return self.ptr.interlaced_frame
-
+        return bool(self.ptr.flags & lib.AV_FRAME_FLAG_INTERLACED)
 
     @property
     def pict_type(self):
-        """One of :class:`.PictureType`.
+        """Returns an integer that corresponds to the PictureType enum.
 
-        Wraps :ffmpeg:`AVFrame.pict_type`.
+        Wraps :ffmpeg:`AVFrame.pict_type`
 
+        :type: int
         """
-        return PictureType.get(self.ptr.pict_type, create=True)
+        return self.ptr.pict_type
 
     @pict_type.setter
     def pict_type(self, value):
-        self.ptr.pict_type = PictureType[value].value
+        self.ptr.pict_type = value
 
     @property
     def colorspace(self):
@@ -393,31 +374,54 @@ cdef class VideoFrame(Frame):
         return frame
 
     @staticmethod
-    def from_numpy_buffer(array, format="rgb24"):
+    def from_numpy_buffer(array, format="rgb24", width=0):
+        # Usually the width of the array is the same as the width of the image. But sometimes
+        # this is not possible, for example with yuv420p images that have padding. These are
+        # awkward because the UV rows at the bottom have padding bytes in the middle of the
+        # row as well as at the end. To cope with these, callers need to be able to pass the
+        # actual width to us.
+        height = array.shape[0]
+        if not width:
+            width = array.shape[1]
+
         if format in ("rgb24", "bgr24"):
             check_ndarray(array, "uint8", 3)
             check_ndarray_shape(array, array.shape[2] == 3)
-            height, width = array.shape[:2]
+            if array.strides[1:] != (3, 1):
+                raise ValueError("provided array does not have C_CONTIGUOUS rows")
+            linesizes = (array.strides[0], )
+        elif format in ("rgba", "bgra"):
+            check_ndarray(array, "uint8", 3)
+            check_ndarray_shape(array, array.shape[2] == 4)
+            if array.strides[1:] != (4, 1):
+                raise ValueError("provided array does not have C_CONTIGUOUS rows")
+            linesizes = (array.strides[0], )
         elif format in ("gray", "gray8", "rgb8", "bgr8"):
             check_ndarray(array, "uint8", 2)
-            height, width = array.shape[:2]
+            if array.strides[1] != 1:
+                raise ValueError("provided array does not have C_CONTIGUOUS rows")
+            linesizes = (array.strides[0], )
         elif format in ("yuv420p", "yuvj420p", "nv12"):
             check_ndarray(array, "uint8", 2)
             check_ndarray_shape(array, array.shape[0] % 3 == 0)
             check_ndarray_shape(array, array.shape[1] % 2 == 0)
-            height, width = array.shape[:2]
             height = height // 6 * 4
+            if array.strides[1] != 1:
+                raise ValueError("provided array does not have C_CONTIGUOUS rows")
+            if format in ("yuv420p", "yuvj420p"):
+                # For YUV420 planar formats, the UV plane stride is always half the Y stride.
+                linesizes = (array.strides[0], array.strides[0] // 2, array.strides[0] // 2)
+            else:
+                # Planes where U and V are interleaved have the same stride as Y.
+                linesizes = (array.strides[0], array.strides[0])
         else:
             raise ValueError(f"Conversion from numpy array with format `{format}` is not yet supported")
 
-        if not array.flags["C_CONTIGUOUS"]:
-            raise ValueError("provided array must be C_CONTIGUOUS")
-
         frame = alloc_video_frame()
-        frame._image_fill_pointers_numpy(array, width, height, format)
+        frame._image_fill_pointers_numpy(array, width, height, linesizes, format)
         return frame
 
-    def _image_fill_pointers_numpy(self, buffer, width, height, format):
+    def _image_fill_pointers_numpy(self, buffer, width, height, linesizes, format):
         cdef lib.AVPixelFormat c_format
         cdef uint8_t * c_ptr
         cdef size_t c_data
@@ -452,13 +456,8 @@ cdef class VideoFrame(Frame):
         self.ptr.format = c_format
         self.ptr.width = width
         self.ptr.height = height
-        res = lib.av_image_fill_linesizes(
-            self.ptr.linesize,
-            <lib.AVPixelFormat>self.ptr.format,
-            width,
-        )
-        if res:
-          err_check(res)
+        for i, linesize in enumerate(linesizes):
+            self.ptr.linesize[i] = linesize
 
         res = lib.av_image_fill_pointers(
             self.ptr.data,

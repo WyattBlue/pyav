@@ -71,7 +71,7 @@ html_theme_path = [os.path.abspath(os.path.join(__file__, "..", "_themes"))]
 
 # The name of an image file (relative to this directory) to place at the top
 # of the sidebar.
-html_logo = "_static/logo-250.png"
+html_logo = "_static/logo.webp"
 
 # The name of an image file (within the static path) to use as favicon of the
 # docs.  This file should be a Windows icon file (.ico) being 16x16 or 32x32
@@ -238,24 +238,48 @@ class EnumTable(SphinxDirective):
         )
 
         seen = set()
-
-        for name, item in enum._by_name.items():
-            if name.lower() in seen:
-                continue
-            seen.add(name.lower())
-
-            try:
-                attr = properties[item]
-            except KeyError:
-                if cls:
+        if hasattr(enum, "_by_name"):  # Our custom enum class
+            enum_items = enum._by_name.items()
+            for name, item in enum_items:
+                if name.lower() in seen:
                     continue
-                attr = None
+                seen.add(name.lower())
 
-            value = f"0x{item.value:X}"
-            doc = item.__doc__ or "-"
-            tbody += makerow(attr, name, value, doc)
+                try:
+                    attr = properties[item]
+                except KeyError:
+                    if cls:
+                        continue
+                    attr = None
 
-        return [table]
+                value = f"0x{item.value:X}"
+                doc = item.__doc__ or "-"
+                tbody += makerow(attr, name, value, doc)
+
+            return [table]
+        else:  # Standard IntEnum
+            enum_items = [
+                (name, item)
+                for name, item in vars(enum).items()
+                if isinstance(item, enum)
+            ]
+            for name, item in enum_items:
+                if name.lower() in seen:
+                    continue
+                seen.add(name.lower())
+
+                try:
+                    attr = properties[item]
+                except KeyError:
+                    if cls:
+                        continue
+                    attr = None
+
+                value = f"0x{item.value:X}"
+                doc = enum.__annotations__.get(name, "---")[1:-1]
+                tbody += makerow(attr, name, value, doc)
+
+            return [table]
 
 
 doxylink = {}

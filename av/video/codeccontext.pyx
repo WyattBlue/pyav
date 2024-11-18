@@ -20,10 +20,6 @@ cdef class VideoCodecContext(CodecContext):
         self._build_format()
         self.encoded_frame_count = 0
 
-    cdef _set_default_time_base(self):
-        self.ptr.time_base.num = self.ptr.framerate.den or 1
-        self.ptr.time_base.den = self.ptr.framerate.num or lib.AV_TIME_BASE
-
     cdef _prepare_frames_for_encode(self, Frame input):
         if not input:
             return [None]
@@ -78,6 +74,8 @@ cdef class VideoCodecContext(CodecContext):
 
     @property
     def width(self):
+        if self.ptr is NULL:
+            return 0
         return self.ptr.width
 
     @width.setter
@@ -87,6 +85,8 @@ cdef class VideoCodecContext(CodecContext):
 
     @property
     def height(self):
+        if self.ptr is NULL:
+            return 0
         return self.ptr.height
 
     @height.setter
@@ -278,3 +278,33 @@ cdef class VideoCodecContext(CodecContext):
     @max_b_frames.setter
     def max_b_frames(self, value):
         self.ptr.max_b_frames = value
+
+    @property
+    def qmin(self):
+        """
+        The minimum quantiser value of an encoded stream.
+
+        Wraps :ffmpeg:`AVCodecContext.qmin`.
+
+        :type: int
+        """
+        return self.ptr.qmin
+
+    @qmin.setter
+    def qmin(self, value):
+        self.ptr.qmin = value
+
+    @property
+    def qmax(self):
+        """
+        The maximum quantiser value of an encoded stream.
+
+        Wraps :ffmpeg:`AVCodecContext.qmax`.
+
+        :type: int
+        """
+        return self.ptr.qmax
+
+    @qmax.setter
+    def qmax(self, value):
+        self.ptr.qmax = value

@@ -11,6 +11,8 @@ from av.error cimport err_check
 from av.packet cimport Packet
 from av.utils cimport avrational_to_fraction, to_avrational
 
+from enum import Enum, Flag
+
 from av.dictionary import Dictionary
 
 
@@ -39,22 +41,20 @@ cdef CodecContext wrap_codec_context(lib.AVCodecContext *c_ctx, const lib.AVCode
     return py_ctx
 
 
-ThreadType = define_enum("ThreadType", __name__, (
-    ("NONE", 0),
-    ("FRAME", lib.FF_THREAD_FRAME, "Decode more than one frame at once"),
-    ("SLICE", lib.FF_THREAD_SLICE, "Decode more than one part of a single frame at once"),
-    ("AUTO", lib.FF_THREAD_SLICE | lib.FF_THREAD_FRAME, "Decode using both FRAME and SLICE methods."),
-), is_flags=True)
+class ThreadType(Flag):
+    NONE = 0
+    FRAME: "Decode more than one frame at once" = lib.FF_THREAD_FRAME
+    SLICE: "Decode more than one part of a single frame at once" = lib.FF_THREAD_SLICE
+    AUTO: "Decode using both FRAME and SLICE methods." = lib.FF_THREAD_SLICE | lib.FF_THREAD_FRAME
 
-SkipType = define_enum("SkipType", __name__, (
-    ("NONE", lib.AVDISCARD_NONE, "Discard nothing"),
-    ("DEFAULT", lib.AVDISCARD_DEFAULT, "Discard useless packets like 0 size packets in AVI"),
-    ("NONREF", lib.AVDISCARD_NONREF, "Discard all non reference"),
-    ("BIDIR", lib.AVDISCARD_BIDIR, "Discard all bidirectional frames"),
-    ("NONINTRA", lib.AVDISCARD_NONINTRA, "Discard all non intra frames"),
-    ("NONKEY", lib.AVDISCARD_NONKEY, "Discard all frames except keyframes"),
-    ("ALL", lib.AVDISCARD_ALL, "Discard all"),
-))
+class SkipType(Enum):
+    NONE: "Discard nothing" = lib.AVDISCARD_NONE
+    DEFAULT: "Discard useless packets like 0 size packets in AVI" = lib.AVDISCARD_DEFAULT
+    NONREF: "Discard all non reference" = lib.AVDISCARD_NONREF
+    BIDIR: "Discard all bidirectional frames" = lib.AVDISCARD_BIDIR
+    NONINTRA: "Discard all non intra frames" = lib.AVDISCARD_NONINTRA
+    NONKEY: "Discard all frames except keyframes" = lib.AVDISCARD_NONKEY
+    ALL: "Discard all" = lib.AVDISCARD_ALL
 
 Flags = define_enum("Flags", __name__, (
     ("NONE", 0),
@@ -117,7 +117,6 @@ Flags2 = define_enum("Flags2", __name__, (
 
 
 cdef class CodecContext:
-
     @staticmethod
     def create(codec, mode=None):
         cdef Codec cy_codec = codec if isinstance(codec, Codec) else Codec(codec, mode)
@@ -130,6 +129,7 @@ cdef class CodecContext:
 
         self.options = {}
         self.stream_index = -1  # This is set by the container immediately.
+        self.is_open = False
 
     cdef _init(self, lib.AVCodecContext *ptr, const lib.AVCodec *codec):
         self.ptr = ptr
@@ -192,10 +192,11 @@ cdef class CodecContext:
 
     @property
     def extradata(self):
+        if self.ptr is NULL:
+            return None
         if self.ptr.extradata_size > 0:
             return <bytes>(<uint8_t*>self.ptr.extradata)[:self.ptr.extradata_size]
-        else:
-            return None
+        return None
 
     @extradata.setter
     def extradata(self, data):
@@ -216,19 +217,19 @@ cdef class CodecContext:
         return self.ptr.extradata_size
 
     @property
-    def is_open(self):
-        return lib.avcodec_is_open(self.ptr)
-
-    @property
     def is_encoder(self):
+        if self.ptr is NULL:
+            return False
         return lib.av_codec_is_encoder(self.ptr.codec)
 
     @property
     def is_decoder(self):
+        if self.ptr is NULL:
+            return False
         return lib.av_codec_is_decoder(self.ptr.codec)
 
     cpdef open(self, bint strict=True):
-        if lib.avcodec_is_open(self.ptr):
+        if self.is_open:
             if strict:
                 raise ValueError("CodecContext is already open.")
             return
@@ -236,30 +237,25 @@ cdef class CodecContext:
         cdef _Dictionary options = Dictionary()
         options.update(self.options or {})
 
-        # Assert we have a time_base for encoders.
         if not self.ptr.time_base.num and self.is_encoder:
-            self._set_default_time_base()
+            if self.type == "video":
+                self.ptr.time_base.num = self.ptr.framerate.den or 1
+                self.ptr.time_base.den = self.ptr.framerate.num or lib.AV_TIME_BASE
+            elif self.type == "audio":
+                self.ptr.time_base.num = 1
+                self.ptr.time_base.den = self.ptr.sample_rate
+            else:
+                self.ptr.time_base.num = 1
+                self.ptr.time_base.den = lib.AV_TIME_BASE
 
         err_check(lib.avcodec_open2(self.ptr, self.codec.ptr, &options.ptr))
-
+        self.is_open = True
         self.options = dict(options)
-
-    cdef _set_default_time_base(self):
-        self.ptr.time_base.num = 1
-        self.ptr.time_base.den = lib.AV_TIME_BASE
-
-    cpdef close(self, bint strict=True):
-        if not lib.avcodec_is_open(self.ptr):
-            if strict:
-                raise ValueError("CodecContext is already closed.")
-            return
-        err_check(lib.avcodec_close(self.ptr))
 
     def __dealloc__(self):
         if self.ptr and self.extradata_set:
             lib.av_freep(&self.ptr.extradata)
         if self.ptr:
-            lib.avcodec_close(self.ptr)
             lib.avcodec_free_context(&self.ptr)
         if self.parser:
             lib.av_parser_close(self.parser)
@@ -502,9 +498,54 @@ cdef class CodecContext:
         return self.codec.type
 
     @property
+    def profiles(self):
+        """
+        List the available profiles for this stream.
+
+        :type: list[str]
+        """
+        ret = []
+        if not self.ptr.codec or not self.codec.desc or not self.codec.desc.profiles:
+            return ret
+
+        # Profiles are always listed in the codec descriptor, but not necessarily in
+        # the codec itself. So use the descriptor here.
+        desc = self.codec.desc
+        cdef int i = 0
+        while desc.profiles[i].profile != lib.FF_PROFILE_UNKNOWN:
+            ret.append(desc.profiles[i].name)
+            i += 1
+
+        return ret
+
+    @property
     def profile(self):
-        if self.ptr.codec and lib.av_get_profile_name(self.ptr.codec, self.ptr.profile):
-            return lib.av_get_profile_name(self.ptr.codec, self.ptr.profile)
+        if not self.ptr.codec or not self.codec.desc or not self.codec.desc.profiles:
+            return
+
+        # Profiles are always listed in the codec descriptor, but not necessarily in
+        # the codec itself. So use the descriptor here.
+        desc = self.codec.desc
+        cdef int i = 0
+        while desc.profiles[i].profile != lib.FF_PROFILE_UNKNOWN:
+            if desc.profiles[i].profile == self.ptr.profile:
+                return desc.profiles[i].name
+            i += 1
+
+    @profile.setter
+    def profile(self, value):
+        if not self.codec or not self.codec.desc or not self.codec.desc.profiles:
+            return
+
+        # Profiles are always listed in the codec descriptor, but not necessarily in
+        # the codec itself. So use the descriptor here.
+        desc = self.codec.desc
+        cdef int i = 0
+        while desc.profiles[i].profile != lib.FF_PROFILE_UNKNOWN:
+            if desc.profiles[i].name == value:
+                self.ptr.profile = desc.profiles[i].profile
+                return
+            i += 1
 
     @property
     def time_base(self):
@@ -565,7 +606,7 @@ cdef class CodecContext:
 
     @thread_count.setter
     def thread_count(self, int value):
-        if lib.avcodec_is_open(self.ptr):
+        if self.is_open:
             raise RuntimeError("Cannot change thread_count after codec is open.")
         self.ptr.thread_count = value
 
@@ -576,13 +617,13 @@ cdef class CodecContext:
         Wraps :ffmpeg:`AVCodecContext.thread_type`.
 
         """
-        return ThreadType.get(self.ptr.thread_type, create=True)
+        return ThreadType(self.ptr.thread_type)
 
     @thread_type.setter
     def thread_type(self, value):
-        if lib.avcodec_is_open(self.ptr):
+        if self.is_open:
             raise RuntimeError("Cannot change thread_type after codec is open.")
-        self.ptr.thread_type = ThreadType[value].value
+        self.ptr.thread_type = value.value
 
     @property
     def skip_frame(self):
@@ -591,11 +632,11 @@ cdef class CodecContext:
         Wraps :ffmpeg:`AVCodecContext.skip_frame`.
 
         """
-        return SkipType._get(self.ptr.skip_frame, create=True)
+        return SkipType(self.ptr.skip_frame)
 
     @skip_frame.setter
     def skip_frame(self, value):
-        self.ptr.skip_frame = SkipType[value].value
+        self.ptr.skip_frame = value.value
 
     @property
     def delay(self):

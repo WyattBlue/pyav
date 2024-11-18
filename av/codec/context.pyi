@@ -1,25 +1,26 @@
+from enum import Enum, Flag
 from fractions import Fraction
-from typing import Any, Literal
+from typing import ClassVar, Literal
 
 from av.enum import EnumFlag, EnumItem
 from av.packet import Packet
 
 from .codec import Codec
 
-class ThreadType(EnumFlag):
-    NONE: int
-    FRAME: int
-    SLICE: int
-    AUTO: int
+class ThreadType(Flag):
+    NONE: ClassVar[ThreadType]
+    FRAME: ClassVar[ThreadType]
+    SLICE: ClassVar[ThreadType]
+    AUTO: ClassVar[ThreadType]
 
-class SkipType(EnumItem):
-    NONE: int
-    DEFAULT: int
-    NONREF: int
-    BIDIR: int
-    NONINTRA: int
-    NONKEY: int
-    ALL: int
+class SkipType(Enum):
+    NONE: ClassVar[SkipType]
+    DEFAULT: ClassVar[SkipType]
+    NONREF: ClassVar[SkipType]
+    BIDIR: ClassVar[SkipType]
+    NONINTRA: ClassVar[SkipType]
+    NONKEY: ClassVar[SkipType]
+    ALL: ClassVar[SkipType]
 
 class Flags(EnumFlag):
     NONE: int
@@ -55,26 +56,22 @@ class Flags2(EnumFlag):
     RO_FLUSH_NOOP: int
 
 class CodecContext:
-    extradata: bytes | None
-    extradata_size: int
-    is_open: bool
-    is_encoder: bool
-    is_decoder: bool
     name: str
-    codec: Codec
-    options: dict[str, str]
     type: Literal["video", "audio", "data", "subtitle", "attachment"]
+    options: dict[str, str]
     profile: str | None
+    @property
+    def profiles(self) -> list[str]: ...
+    extradata: bytes | None
     time_base: Fraction
     codec_tag: str
     bit_rate: int | None
-    max_bit_rate: int | None
     bit_rate_tolerance: int
     thread_count: int
-    thread_type: Any
-    skip_frame: Any
+    thread_type: ThreadType
+    skip_frame: SkipType
 
-    # flgas
+    # flags
     unaligned: bool
     qscale: bool
     four_mv: bool
@@ -96,10 +93,22 @@ class CodecContext:
     ac_pred: bool
     interlaced_me: bool
     closed_gop: bool
-    delay: bool
 
+    @property
+    def is_open(self) -> bool: ...
+    @property
+    def is_encoder(self) -> bool: ...
+    @property
+    def is_decoder(self) -> bool: ...
+    @property
+    def codec(self) -> Codec: ...
+    @property
+    def max_bit_rate(self) -> int | None: ...
+    @property
+    def delay(self) -> bool: ...
+    @property
+    def extradata_size(self) -> int: ...
     def open(self, strict: bool = True) -> None: ...
-    def close(self, strict: bool = True) -> None: ...
     @staticmethod
     def create(
         codec: str | Codec, mode: Literal["r", "w"] | None = None

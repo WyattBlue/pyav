@@ -17,6 +17,11 @@ class VideoStream(Stream):
     sample_aspect_ratio: Fraction | None
     display_aspect_ratio: Fraction | None
     codec_context: VideoCodecContext
+
+    def encode(self, frame: VideoFrame | None = None) -> list[Packet]: ...
+    def encode_lazy(self, frame: VideoFrame | None = None) -> Iterator[Packet]: ...
+    def decode(self, packet: Packet | None = None) -> list[VideoFrame]: ...
+
     # from codec context
     format: VideoFormat
     width: int
@@ -35,7 +40,3 @@ class VideoStream(Stream):
     color_trc: int
     colorspace: int
     type: Literal["video"]
-
-    def encode(self, frame: VideoFrame | None = None) -> list[Packet]: ...
-    def encode_lazy(self, frame: VideoFrame | None = None) -> Iterator[Packet]: ...
-    def decode(self, packet: Packet | None = None) -> list[VideoFrame]: ...
