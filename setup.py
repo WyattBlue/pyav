@@ -152,8 +152,31 @@ else:
         "library_dirs": [],
     }
 
-# Construct the modules that we find in the "av" directory.
-ext_modules = []
+
+loudnorm_extension = Extension(
+    "av.filter.loudnorm",
+    sources=[
+        "av/filter/loudnorm.pyx",
+        "av/filter/loudnorm_impl.c",
+    ],
+    include_dirs=["av/filter"] + extension_extra["include_dirs"],
+    libraries=extension_extra["libraries"],
+    library_dirs=extension_extra["library_dirs"],
+)
+
+# Add the cythonized loudnorm extension to ext_modules
+ext_modules = cythonize(
+    loudnorm_extension,
+    compiler_directives={
+        "c_string_type": "str",
+        "c_string_encoding": "ascii",
+        "embedsignature": True,
+        "language_level": 3,
+    },
+    build_dir="src",
+    include_path=["include"],
+)
+
 for dirname, dirnames, filenames in os.walk("av"):
     for filename in filenames:
         # We are looking for Cython sources.
@@ -214,7 +237,7 @@ setup(
     long_description_content_type="text/markdown",
     license="BSD",
     project_urls={
-        "Bug Reports": "https://github.com/PyAV-Org/PyAV/issues",
+        "Bug Reports": "https://github.com/PyAV-Org/PyAV/discussions/new?category=4-bugs",
         "Documentation": "https://pyav.basswood-io.com",
         "Download": "https://pypi.org/project/pyav",
     },
@@ -242,6 +265,7 @@ setup(
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
         "Programming Language :: Python :: 3.12",
+        "Programming Language :: Python :: 3.13",
         "Topic :: Software Development :: Libraries :: Python Modules",
         "Topic :: Multimedia :: Sound/Audio",
         "Topic :: Multimedia :: Sound/Audio :: Conversion",
