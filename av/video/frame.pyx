@@ -4,6 +4,7 @@ from enum import IntEnum
 from libc.stdint cimport uint8_t
 
 from av.error cimport err_check
+from av.sidedata.sidedata cimport get_display_rotation
 from av.utils cimport check_ndarray
 from av.video.format cimport get_pix_fmt, get_video_format
 from av.video.plane cimport VideoPlane
@@ -173,6 +174,16 @@ cdef class VideoFrame(Frame):
         return self.ptr.height
 
     @property
+    def rotation(self):
+        """The rotation component of the `DISPLAYMATRIX` transformation matrix.
+
+        Returns:
+            int: The angle (in degrees) by which the transformation rotates the frame
+                counterclockwise. The angle will be in range [-180, 180].
+        """
+        return get_display_rotation(self)
+
+    @property
     def interlaced_frame(self):
         """Is this frame an interlaced or progressive?"""
 
@@ -284,6 +295,8 @@ cdef class VideoFrame(Frame):
         .. note:: For ``pal8``, an ``(image, palette)`` tuple will be returned,
         with the palette being in ARGB (PyAV will swap bytes if needed).
 
+        .. note:: For ``gbrp`` formats, channels are flipped to RGB order.
+
         """
         cdef VideoFrame frame = self.reformat(**kwargs)
 
@@ -301,7 +314,7 @@ cdef class VideoFrame(Frame):
             return np.hstack((
                 useful_array(frame.planes[0]),
                 useful_array(frame.planes[1]),
-                useful_array(frame.planes[2])
+                useful_array(frame.planes[2]),
             )).reshape(-1, frame.height, frame.width)
         elif frame.format.name == "yuyv422":
             assert frame.width % 2 == 0
@@ -309,21 +322,28 @@ cdef class VideoFrame(Frame):
             return useful_array(frame.planes[0], 2).reshape(frame.height, frame.width, -1)
         elif frame.format.name == "gbrp":
             array = np.empty((frame.height, frame.width, 3), dtype="uint8")
-            array[:, :, 0] = useful_array(frame.planes[2], 1).reshape(-1, frame.width)
-            array[:, :, 1] = useful_array(frame.planes[0], 1).reshape(-1, frame.width)
-            array[:, :, 2] = useful_array(frame.planes[1], 1).reshape(-1, frame.width)
+            array[:, :, 0] = useful_array(frame.planes[2], 1).reshape(frame.height, frame.width)
+            array[:, :, 1] = useful_array(frame.planes[0], 1).reshape(frame.height, frame.width)
+            array[:, :, 2] = useful_array(frame.planes[1], 1).reshape(frame.height, frame.width)
             return array
         elif frame.format.name in ("gbrp10be", "gbrp12be", "gbrp14be", "gbrp16be", "gbrp10le", "gbrp12le", "gbrp14le", "gbrp16le"):
             array = np.empty((frame.height, frame.width, 3), dtype="uint16")
-            array[:, :, 0] = useful_array(frame.planes[2], 2, "uint16").reshape(-1, frame.width)
-            array[:, :, 1] = useful_array(frame.planes[0], 2, "uint16").reshape(-1, frame.width)
-            array[:, :, 2] = useful_array(frame.planes[1], 2, "uint16").reshape(-1, frame.width)
+            array[:, :, 0] = useful_array(frame.planes[2], 2, "uint16").reshape(frame.height, frame.width)
+            array[:, :, 1] = useful_array(frame.planes[0], 2, "uint16").reshape(frame.height, frame.width)
+            array[:, :, 2] = useful_array(frame.planes[1], 2, "uint16").reshape(frame.height, frame.width)
             return byteswap_array(array, frame.format.name.endswith("be"))
         elif frame.format.name in ("gbrpf32be", "gbrpf32le"):
             array = np.empty((frame.height, frame.width, 3), dtype="float32")
-            array[:, :, 0] = useful_array(frame.planes[2], 4, "float32").reshape(-1, frame.width)
-            array[:, :, 1] = useful_array(frame.planes[0], 4, "float32").reshape(-1, frame.width)
-            array[:, :, 2] = useful_array(frame.planes[1], 4, "float32").reshape(-1, frame.width)
+            array[:, :, 0] = useful_array(frame.planes[2], 4, "float32").reshape(frame.height, frame.width)
+            array[:, :, 1] = useful_array(frame.planes[0], 4, "float32").reshape(frame.height, frame.width)
+            array[:, :, 2] = useful_array(frame.planes[1], 4, "float32").reshape(frame.height, frame.width)
+            return byteswap_array(array, frame.format.name.endswith("be"))
+        elif frame.format.name in ("gbrapf32be", "gbrapf32le"):
+            array = np.empty((frame.height, frame.width, 4), dtype="float32")
+            array[:, :, 0] = useful_array(frame.planes[2], 4, "float32").reshape(frame.height, frame.width)
+            array[:, :, 1] = useful_array(frame.planes[0], 4, "float32").reshape(frame.height, frame.width)
+            array[:, :, 2] = useful_array(frame.planes[1], 4, "float32").reshape(frame.height, frame.width)
+            array[:, :, 3] = useful_array(frame.planes[3], 4, "float32").reshape(frame.height, frame.width)
             return byteswap_array(array, frame.format.name.endswith("be"))
         elif frame.format.name in ("rgb24", "bgr24"):
             return useful_array(frame.planes[0], 3).reshape(frame.height, frame.width, -1)
@@ -334,17 +354,22 @@ cdef class VideoFrame(Frame):
         elif frame.format.name in ("gray16be", "gray16le"):
             return byteswap_array(
                 useful_array(frame.planes[0], 2, "uint16").reshape(frame.height, frame.width),
-                frame.format.name == "gray16be",
+                frame.format.name.endswith("be"),
+            )
+        elif frame.format.name in ("grayf32be", "grayf32le"):
+            return byteswap_array(
+                useful_array(frame.planes[0], 4, "float32").reshape(frame.height, frame.width),
+                frame.format.name.endswith("be"),
             )
         elif frame.format.name in ("rgb48be", "rgb48le"):
             return byteswap_array(
                 useful_array(frame.planes[0], 6, "uint16").reshape(frame.height, frame.width, -1),
-                frame.format.name == "rgb48be",
+                frame.format.name.endswith("be"),
             )
         elif frame.format.name in ("rgba64be", "rgba64le"):
             return byteswap_array(
                 useful_array(frame.planes[0], 8, "uint16").reshape(frame.height, frame.width, -1),
-                frame.format.name == "rgba64be",
+                frame.format.name.endswith("be"),
             )
         elif frame.format.name == "pal8":
             image = useful_array(frame.planes[0]).reshape(frame.height, frame.width)
@@ -480,6 +505,8 @@ cdef class VideoFrame(Frame):
         must be in the system's native byte order.
 
         .. note:: for ``pal8``, an ``(image, palette)`` pair must be passed. `palette` must have shape (256, 4) and is given in ARGB format (PyAV will swap bytes if needed).
+
+        .. note:: for ``gbrp`` formats, channels are assumed to be given in RGB order.
         """
         if format == "pal8":
             array, palette = array
@@ -557,19 +584,34 @@ cdef class VideoFrame(Frame):
         elif format in ("gray16be", "gray16le"):
             check_ndarray(array, "uint16", 2)
             frame = VideoFrame(array.shape[1], array.shape[0], format)
-            copy_array_to_plane(byteswap_array(array, format == "gray16be"), frame.planes[0], 2)
+            copy_array_to_plane(byteswap_array(array, format.endswith("be")), frame.planes[0], 2)
+            return frame
+        elif format in ("grayf32be", "grayf32le"):
+            check_ndarray(array, "float32", 2)
+            frame = VideoFrame(array.shape[1], array.shape[0], format)
+            copy_array_to_plane(byteswap_array(array, format.endswith("be")), frame.planes[0], 4)
             return frame
         elif format in ("rgb48be", "rgb48le"):
             check_ndarray(array, "uint16", 3)
             check_ndarray_shape(array, array.shape[2] == 3)
             frame = VideoFrame(array.shape[1], array.shape[0], format)
-            copy_array_to_plane(byteswap_array(array, format == "rgb48be"), frame.planes[0], 6)
+            copy_array_to_plane(byteswap_array(array, format.endswith("be")), frame.planes[0], 6)
             return frame
         elif format in ("rgba64be", "rgba64le"):
             check_ndarray(array, "uint16", 3)
             check_ndarray_shape(array, array.shape[2] == 4)
             frame = VideoFrame(array.shape[1], array.shape[0], format)
-            copy_array_to_plane(byteswap_array(array, format == "rgba64be"), frame.planes[0], 8)
+            copy_array_to_plane(byteswap_array(array, format.endswith("be")), frame.planes[0], 8)
+            return frame
+        elif format in ("gbrapf32be", "gbrapf32le"):
+            check_ndarray(array, "float32", 3)
+            check_ndarray_shape(array, array.shape[2] == 4)
+
+            frame = VideoFrame(array.shape[1], array.shape[0], format)
+            copy_array_to_plane(byteswap_array(array[:, :, 1], format.endswith("be")), frame.planes[0], 4)
+            copy_array_to_plane(byteswap_array(array[:, :, 2], format.endswith("be")), frame.planes[1], 4)
+            copy_array_to_plane(byteswap_array(array[:, :, 0], format.endswith("be")), frame.planes[2], 4)
+            copy_array_to_plane(byteswap_array(array[:, :, 3], format.endswith("be")), frame.planes[3], 4)
             return frame
         elif format == "nv12":
             check_ndarray(array, "uint8", 2)

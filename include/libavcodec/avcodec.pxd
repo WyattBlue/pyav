@@ -8,6 +8,16 @@ cdef extern from "libavcodec/codec_id.h":
     AVCodecID av_codec_get_id(const AVCodecTag *const *tags, uint32_t tag)
 
 
+cdef extern from "libavcodec/packet.h" nogil:
+    AVPacketSideData* av_packet_side_data_new(
+        AVPacketSideData **sides,
+        int *nb_sides,
+        AVPacketSideDataType type,
+        size_t size,
+        int free_opaque
+    )
+
+
 cdef extern from "libavutil/channel_layout.h":
     ctypedef enum AVChannelOrder:
         AV_CHANNEL_ORDER_UNSPEC
@@ -213,6 +223,8 @@ cdef extern from "libavcodec/avcodec.h" nogil:
 
         AVFrame* coded_frame
 
+        void* opaque
+
         int bit_rate
         int bit_rate_tolerance
         int mb_decision
@@ -247,6 +259,7 @@ cdef extern from "libavcodec/avcodec.h" nogil:
         int coded_height
 
         AVPixelFormat pix_fmt
+        AVPixelFormat sw_pix_fmt
         AVRational sample_aspect_ratio
         int gop_size  # The number of pictures in a group of pictures, or 0 for intra_only.
         int max_b_frames
@@ -265,6 +278,11 @@ cdef extern from "libavcodec/avcodec.h" nogil:
         #: .. todo:: ``get_buffer`` is deprecated for get_buffer2 in newer versions of FFmpeg.
         int get_buffer(AVCodecContext *ctx, AVFrame *frame)
         void release_buffer(AVCodecContext *ctx, AVFrame *frame)
+
+        # Hardware acceleration
+        AVHWAccel *hwaccel
+        AVBufferRef *hw_device_ctx
+        AVPixelFormat (*get_format)(AVCodecContext *s, const AVPixelFormat *fmt)
 
         # User Data
         void *opaque
@@ -534,6 +552,10 @@ cdef extern from "libavcodec/avcodec.h" nogil:
     cdef struct AVCodecParameters:
         AVMediaType codec_type
         AVCodecID codec_id
+        AVPacketSideData *coded_side_data
+        int nb_coded_side_data
+        uint8_t *extradata
+        int extradata_size
 
     cdef int avcodec_parameters_copy(
         AVCodecParameters *dst,
