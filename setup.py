@@ -246,7 +246,7 @@ setup(
     url="https://github.com/WyattBlue/pyav",
     packages=find_packages(exclude=["build*", "examples*", "tests*", "include*"]),
     package_data=package_data,
-    python_requires=">=3.10",
+    python_requires=">=3.9",
     zip_safe=False,
     ext_modules=ext_modules,
     entry_points={
